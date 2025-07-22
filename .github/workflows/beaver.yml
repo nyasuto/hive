@@ -1,18 +1,33 @@
-name: Makefile CI
+# .github/workflows/beaver.yml
+name: Generate Knowledge Base with Beaver
 
 on:
   push:
+    branches: [ main ]
+  issues:
+    types: [opened, edited, closed, reopened, labeled, unlabeled]
+  schedule:
+    - cron: '0 6 * * *'  # 毎日午前6時に実行
+
+# 同時実行を防ぎ、キューで順次実行
+concurrency:
+  group: beaver-knowledge-base
+  cancel-in-progress: false
 
 jobs:
-  documentation:
-
+  knowledge-base:
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    
     steps:
-    - name: Generate Beaver Knowledge Base
-      uses: nyasuto/beaver@v1
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        #codecov-token: ${{ secrets.CODECOV_API_TOKEN }}  # オプション
-        #enable-quality-dashboard: true
-        deploy-to-pages: true
+      - name: Generate Beaver Knowledge Base
+        id: beaver
+        uses: nyasuto/beaver@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          codecov-token: ${{ secrets.CODECOV_API_TOKEN }}  # オプション
+          enable-quality-dashboard: true
+          deploy-to-pages: true
