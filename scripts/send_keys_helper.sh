@@ -3,7 +3,7 @@
 # CLI経由でsend-keysを実行するためのヘルパー関数
 
 # 設定
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)"
 PYTHON_CLI="cd $PROJECT_ROOT && python -m bees.cli"
 
 # エラーハンドリング
@@ -161,6 +161,6 @@ main() {
 }
 
 # スクリプトとして実行された場合
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+if [[ "${BASH_SOURCE[0]:-}" == "${0:-}" ]]; then
     main "$@"
 fi

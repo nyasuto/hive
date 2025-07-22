@@ -5,7 +5,7 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 SESSION_NAME="beehive"
 
 # 色付きログ関数
@@ -153,40 +153,20 @@ cmd_start_task() {
     
     log_info "タスクをQueen Beeに投入中: \"$task\""
     
-    # タスク管理システムを使用してタスクを作成
-    local task_id
-    task_id=$("$SCRIPT_DIR/scripts/task_manager.sh" create "$task" "" "medium" "queen" 2>&1 | head -1)
-    if [[ -n "$task_id" && "$task_id" =~ ^[0-9]+$ ]]; then
-        log_success "タスクID $task_id で作成完了"
-        
-        # Queen BeeにSQLite経由でタスクを通知
-        "$SCRIPT_DIR/scripts/task_manager.sh" message "system" "queen" "task_update" \
-            "新しいタスクが割り当てられました" \
-            "タスク「$task」(ID: $task_id) があなたに割り当てられました。このタスクを分析し、必要に応じてDeveloper BeeやQA Beeに作業を分担してください。詳細は task_manager.sh details $task_id で確認できます。" \
-            "$task_id"
-        
-        # Queen Beeの状態をbusyに更新
-        "$SCRIPT_DIR/scripts/task_manager.sh" bee-state "queen" "busy" "$task_id" "25"
-        
-        # CLI経由でタスク割り当て通知
-        source "./scripts/send_keys_helper.sh"
-        
-        local task_message="## 🎯 新しいタスクが割り当てられました (ID: $task_id)
+    # send-keys経由でQueen Beeに直接タスクを送信（シンプル版）
+    source "./scripts/send_keys_helper.sh"
+    
+    local task_message="## 🎯 新しいタスクが割り当てられました
+
 **タスク内容:** $task
 
-詳細確認: \`./scripts/task_manager.sh details $task_id\`
-このタスクを分析し、必要に応じて適切に分担してください。"
+このタスクを分析し、必要に応じてDeveloper BeeやQA Beeに作業を分担してください。
+完了したら進捗を報告してください。"
 
-        assign_task "$SESSION_NAME" "0" "$task_message" "system" "${BEEHIVE_DRY_RUN:-false}"
-        
-        log_success "タスク投入完了 (ID: $task_id)"
-        log_info "タスク詳細: './scripts/task_manager.sh details $task_id'"
-        log_info "Queen Beeの応答を確認するには: './beehive.sh attach'"
-        log_info "タスク状況確認: './scripts/task_manager.sh list pending'"
-    else
-        log_error "タスク作成に失敗しました"
-        return 1
-    fi
+    assign_task "$SESSION_NAME" "0" "$task_message" "system" "false"
+    
+    log_success "タスク投入完了"
+    log_info "Queen Beeの応答を確認するには: './beehive.sh attach'"
 }
 
 # status コマンド - 状態確認
