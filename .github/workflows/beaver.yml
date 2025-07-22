@@ -1,5 +1,5 @@
-# .github/workflows/beaver.yml
 name: Generate Knowledge Base with Beaver
+description: This workflow generates a Beaver knowledge base and deploys it to GitHub Pages.
 
 on:
   push:
