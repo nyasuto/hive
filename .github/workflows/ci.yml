@@ -149,7 +149,8 @@ jobs:
       - name: Verify package structure
         run: |
           python -c "import bees; print('Package import successful')"
-          python -c "from bees import BaseBee, QueenBee, WorkerBee; print('Core classes import successful')"
+          python -c "from bees import BaseBee; print('Core classes import successful')"
+          python -c "from bees.exceptions import BeehiveError, TmuxCommandError, BeeNotFoundError; print('Exception classes import successful')"
 
       - name: Test database initialization
         run: |
