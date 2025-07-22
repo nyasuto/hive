@@ -62,14 +62,14 @@ create_tmux_session() {
 create_windows() {
     log_info "Creating Bee windows (1 bee per window)..."
     
-    # Window 0: Queen Bee
+    # Window 0: Queen Bee (プロジェクトルートで起動)
     tmux rename-window -t "$SESSION_NAME:0" "queen"
     
-    # Window 1: Developer Bee  
-    tmux new-window -t "$SESSION_NAME:1" -n "developer" -c "$PROJECT_ROOT/workspaces/developer"
+    # Window 1: Developer Bee (プロジェクトルートで起動)
+    tmux new-window -t "$SESSION_NAME:1" -n "developer" -c "$PROJECT_ROOT"
     
-    # Window 2: QA Bee
-    tmux new-window -t "$SESSION_NAME:2" -n "qa" -c "$PROJECT_ROOT/workspaces/qa"
+    # Window 2: QA Bee (プロジェクトルートで起動)
+    tmux new-window -t "$SESSION_NAME:2" -n "qa" -c "$PROJECT_ROOT"
     
     # デフォルトでQueen Beeウィンドウを選択
     tmux select-window -t "$SESSION_NAME:0"
@@ -115,20 +115,17 @@ start_claude_instances() {
     source "$PROJECT_ROOT/scripts/send_keys_helper.sh"
     
     log_info "Starting Queen Bee in window 0..."
-    local queen_init="cd $PROJECT_ROOT/workspaces/queen
-claude --dangerously-skip-permissions"
+    local queen_init="claude --dangerously-skip-permissions"
     send_keys_cli "$SESSION_NAME" "0" "$queen_init" "initialization" "queen_startup" "${BEEHIVE_DRY_RUN:-false}"
     sleep 3
     
     log_info "Starting Developer Bee in window 1..."
-    local dev_init="cd $PROJECT_ROOT/workspaces/developer  
-claude --dangerously-skip-permissions"
+    local dev_init="claude --dangerously-skip-permissions"
     send_keys_cli "$SESSION_NAME" "1" "$dev_init" "initialization" "developer_startup" "${BEEHIVE_DRY_RUN:-false}"
     sleep 3
     
     log_info "Starting QA Bee in window 2..."
-    local qa_init="cd $PROJECT_ROOT/workspaces/qa
-claude --dangerously-skip-permissions"
+    local qa_init="claude --dangerously-skip-permissions"
     send_keys_cli "$SESSION_NAME" "2" "$qa_init" "initialization" "qa_startup" "${BEEHIVE_DRY_RUN:-false}"
     sleep 3
     
