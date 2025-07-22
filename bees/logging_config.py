@@ -133,7 +133,10 @@ class BeehiveLogger:
 
             # ローテーション付きファイルハンドラー
             file_handler = logging.handlers.RotatingFileHandler(
-                log_path, maxBytes=10 * 1024 * 1024, backupCount=5, encoding="utf-8"  # 10MB
+                log_path,
+                maxBytes=10 * 1024 * 1024,
+                backupCount=5,
+                encoding="utf-8",  # 10MB
             )
 
             if self.config.structured_logging:

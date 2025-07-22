@@ -123,7 +123,7 @@ class BeehiveConfig:
 
     def _validate_positive_float(self, value: float) -> None:
         """正の浮動小数点数の検証"""
-        if not isinstance(value, (int, float)) or value <= 0:
+        if not isinstance(value, int | float) or value <= 0:
             raise ValueError("Value must be a positive number")
 
     def _validate_positive_int(self, value: int) -> None:
@@ -139,7 +139,7 @@ class BeehiveConfig:
 
     def _validate_percentage(self, value: float) -> None:
         """パーセンテージ値の検証"""
-        if not isinstance(value, (int, float)) or not (0 <= value <= 100):
+        if not isinstance(value, int | float) or not (0 <= value <= 100):
             raise ValueError("Value must be between 0 and 100")
 
     def _validate_pane_mapping(self, value: dict[str, str]) -> None:

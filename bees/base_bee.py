@@ -187,7 +187,7 @@ class BaseBee:
             with self._get_db_connection() as conn:
                 conn.execute(
                     """
-                    INSERT OR REPLACE INTO bee_states 
+                    INSERT OR REPLACE INTO bee_states
                     (bee_name, status, current_task_id, last_heartbeat, workload_score, updated_at)
                     VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?, CURRENT_TIMESTAMP)
                 """,
@@ -224,7 +224,7 @@ class BaseBee:
         with self._get_db_connection() as conn:
             cursor = conn.execute(
                 """
-                INSERT INTO bee_messages 
+                INSERT INTO bee_messages
                 (from_bee, to_bee, message_type, subject, content, task_id, priority)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
@@ -245,7 +245,7 @@ class BaseBee:
         with self._get_db_connection() as conn:
             cursor = conn.execute(
                 """
-                SELECT * FROM bee_messages 
+                SELECT * FROM bee_messages
                 WHERE to_bee = ? AND processed = ?
                 ORDER BY priority DESC, created_at ASC
             """,
@@ -260,7 +260,7 @@ class BaseBee:
         with self._get_db_connection() as conn:
             conn.execute(
                 """
-                UPDATE bee_messages 
+                UPDATE bee_messages
                 SET processed = TRUE, processed_at = CURRENT_TIMESTAMP
                 WHERE message_id = ?
             """,
@@ -288,7 +288,7 @@ class BaseBee:
             # タスク状態更新
             conn.execute(
                 """
-                UPDATE tasks 
+                UPDATE tasks
                 SET status = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE task_id = ?
             """,
@@ -298,7 +298,7 @@ class BaseBee:
             # アクティビティログに記録
             conn.execute(
                 """
-                INSERT INTO task_activity 
+                INSERT INTO task_activity
                 (task_id, bee_name, activity_type, description)
                 VALUES (?, ?, ?, ?)
             """,
@@ -321,7 +321,7 @@ class BaseBee:
         with self._get_db_connection() as conn:
             conn.execute(
                 """
-                INSERT INTO task_activity 
+                INSERT INTO task_activity
                 (task_id, bee_name, activity_type, description, metadata)
                 VALUES (?, ?, ?, ?, ?)
             """,
@@ -461,7 +461,7 @@ class BaseBee:
         with self._get_db_connection() as conn:
             conn.execute(
                 """
-                UPDATE bee_states 
+                UPDATE bee_states
                 SET last_heartbeat = CURRENT_TIMESTAMP
                 WHERE bee_name = ?
             """,
@@ -484,7 +484,7 @@ class BaseBee:
             # アクティブタスク数
             cursor = conn.execute(
                 """
-                SELECT COUNT(*) as count FROM tasks 
+                SELECT COUNT(*) as count FROM tasks
                 WHERE assigned_to = ? AND status IN ('pending', 'in_progress')
             """,
                 (self.bee_name,),
@@ -494,7 +494,7 @@ class BaseBee:
             # 未処理メッセージ数
             cursor = conn.execute(
                 """
-                SELECT COUNT(*) as count FROM bee_messages 
+                SELECT COUNT(*) as count FROM bee_messages
                 WHERE to_bee = ? AND processed = FALSE
             """,
                 (self.bee_name,),
