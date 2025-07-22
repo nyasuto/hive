@@ -345,7 +345,7 @@ class BaseBee:
         content: str,
         task_id: int | None = None,
     ):
-        """tmux経由でメッセージを送信（メイン通信手段）"""
+        """CLI経由でtmux send-keysメッセージを送信"""
         if target_bee not in self.pane_map:
             self.logger.warning(f"Unknown target bee: {target_bee}")
             return
@@ -353,8 +353,8 @@ class BaseBee:
         pane = self.pane_map[target_bee]
 
         # 構造化されたメッセージを作成
-        message_header = f"## 📨 MESSAGE FROM {self.bee_name.upper()}"
-        message_details = [
+        message_lines = [
+            f"## 📨 MESSAGE FROM {self.bee_name.upper()}",
             "",
             f"**Type:** {message_type}",
             f"**Subject:** {subject}",
@@ -363,98 +363,78 @@ class BaseBee:
             "**Content:**",
         ]
 
-        # コンテンツを行に分割
-        content_lines = content.split("\n")
+        # コンテンツを追加
+        message_lines.extend(content.split("\n"))
+        message_lines.extend(["", "---", ""])
+
+        # 完全なメッセージを構築
+        full_message = "\n".join(message_lines)
 
         try:
-            # ヘッダー送信
-            subprocess.run(
-                [
-                    "tmux",
-                    "send-keys",
-                    "-t",
-                    f"{self.session_name}:{pane}",
-                    "",
-                    "Enter",
-                    message_header,
-                    "Enter",
-                ],
-                check=True,
-                capture_output=True,
-                text=True,
-            )
+            # CLI経由でsend-keys実行
+            cmd = [
+                "python",
+                "-m",
+                "bees.cli",
+                "send",
+                self.session_name,
+                pane,
+                full_message,
+                "--type",
+                message_type,
+                "--sender",
+                self.bee_name,
+                "--metadata",
+                f'{{"to_bee": "{target_bee}", "subject": "{subject}", "task_id": {task_id}}}',
+            ]
 
-            # 詳細情報送信
-            for line in message_details:
-                subprocess.run(
-                    ["tmux", "send-keys", "-t", f"{self.session_name}:{pane}", line, "Enter"],
-                    check=True,
-                    capture_output=True,
-                    text=True,
-                )
+            result = subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=30)
 
-            # コンテンツ送信
-            for line in content_lines:
-                subprocess.run(
-                    ["tmux", "send-keys", "-t", f"{self.session_name}:{pane}", line, "Enter"],
-                    check=True,
-                    capture_output=True,
-                    text=True,
-                )
-
-            # フッター
-            subprocess.run(
-                [
-                    "tmux",
-                    "send-keys",
-                    "-t",
-                    f"{self.session_name}:{pane}",
-                    "",
-                    "Enter",
-                    "---",
-                    "Enter",
-                    "",
-                    "Enter",
-                ],
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-
+            self.logger.debug(f"Send-keys CLI result: {result.stdout}")
             self.logger.debug(f"tmux message sent to {target_bee}: {subject}")
 
         except subprocess.CalledProcessError as e:
-            self.logger.warning(f"Failed to send tmux message: {e}")
+            self.logger.warning(f"Failed to send tmux message via CLI: {e.stderr}")
+        except subprocess.TimeoutExpired:
+            self.logger.warning("Send-keys CLI command timed out")
 
     def _send_tmux_notification(self, target_bee: str, message: str):
-        """tmux経由で簡単な通知を送信"""
+        """CLI経由で簡単な通知を送信"""
         if target_bee not in self.pane_map:
             self.logger.warning(f"Unknown target bee: {target_bee}")
             return
 
         pane = self.pane_map[target_bee]
+
+        # 簡単な通知メッセージ構築
+        notification = f"\n# {message}\n"
+
         try:
-            subprocess.run(
-                [
-                    "tmux",
-                    "send-keys",
-                    "-t",
-                    f"{self.session_name}:{pane}",
-                    "",
-                    "Enter",  # 空行
-                    f"# {message}",
-                    "Enter",
-                    "",
-                    "Enter",  # 空行
-                ],
-                check=True,
-                capture_output=True,
-                text=True,
-            )
+            # CLI経由でsend-keys実行
+            cmd = [
+                "python",
+                "-m",
+                "bees.cli",
+                "send",
+                self.session_name,
+                pane,
+                notification,
+                "--type",
+                "notification",
+                "--sender",
+                self.bee_name,
+                "--metadata",
+                f'{{"to_bee": "{target_bee}"}}',
+            ]
+
+            subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=15)
 
             self.logger.debug(f"tmux notification sent to {target_bee}")
+
         except subprocess.CalledProcessError as e:
-            self.logger.warning(f"Failed to send tmux notification: {e}")
+            self.logger.warning(f"Failed to send tmux notification via CLI: {e.stderr}")
+        except subprocess.TimeoutExpired:
+            self.logger.warning("Notification CLI command timed out")
 
     def heartbeat(self):
         """生存確認のハートビート"""
