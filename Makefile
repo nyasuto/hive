@@ -147,6 +147,14 @@ start-task: ## Start a task (usage: make start-task TASK="task description")
 	fi
 	@./beehive.sh start-task "$(TASK)"
 
+# Git hooks management
+git-hooks: ## Install git hooks for Git flow enforcement
+	@./.githooks/install.sh
+
+git-hooks-test: ## Test git hooks without committing
+	@echo "🧪 Testing git hooks..."
+	@./.githooks/pre-commit || echo "Hook test completed with issues"
+
 # Legacy aliases for compatibility
 beehive-init: init ## Alias for init
 beehive-status: status ## Alias for status  

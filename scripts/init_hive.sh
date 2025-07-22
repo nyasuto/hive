@@ -20,7 +20,8 @@ check_prerequisites() {
         exit 1
     fi
     
-    local tmux_version=$(tmux -V | cut -d' ' -f2)
+    local tmux_version
+    tmux_version=$(tmux -V | cut -d' ' -f2)
     log_info "tmux version: $tmux_version"
     
     if ! command -v claude &> /dev/null; then
@@ -111,7 +112,8 @@ verify_startup() {
         return 1
     fi
     
-    local pane_count=$(tmux list-panes -t "$SESSION_NAME:0" | wc -l)
+    local pane_count
+    pane_count=$(tmux list-panes -t "$SESSION_NAME:0" | wc -l)
     if [ "$pane_count" -ne 3 ]; then
         log_error "Invalid pane count (expected: 3, actual: $pane_count)"
         return 1

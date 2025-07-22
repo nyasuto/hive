@@ -140,7 +140,8 @@ cmd_status() {
     echo "🐝 Bee状態:"
     
     # 各ペインの状態
-    local pane_count=$(tmux list-panes -t "$SESSION_NAME:0" | wc -l)
+    local pane_count
+    pane_count=$(tmux list-panes -t "$SESSION_NAME:0" | wc -l)
     echo "  アクティブペイン数: $pane_count/3"
     
     # ペイン詳細
