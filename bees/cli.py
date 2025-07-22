@@ -8,9 +8,12 @@ tmux send-keysの処理を集約し、SQLiteでの透過的ログ保存を提供
 
 import argparse
 import json
+import os
 import sqlite3
 import subprocess
 import sys
+import tempfile
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -61,6 +64,7 @@ class SendKeysCLI:
         sender: str | None = None,
         metadata: dict[str, Any] | None = None,
         dry_run: bool = False,
+        chunk_size: int = 4000,  # 大容量テキスト分割サイズ
     ) -> bool:
         """
         tmux send-keysコマンドを実行し、SQLiteにログを保存
@@ -73,6 +77,7 @@ class SendKeysCLI:
             sender: 送信者名
             metadata: 追加メタデータ
             dry_run: ドライランモード
+            chunk_size: 大容量テキスト分割サイズ（文字数）
 
         Returns:
             bool: 成功時True
@@ -92,28 +97,38 @@ class SendKeysCLI:
         try:
             if not dry_run:
                 # tmux send-keysコマンドを実行
-                target = f"{session_name}:{target_pane}"
+                # ペインIDが%で始まる場合は特別な形式を使用
+                if target_pane.startswith("%"):
+                    target = target_pane  # %0形式の場合はそのまま使用
+                else:
+                    target = f"{session_name}:{target_pane}"  # 従来の形式
 
-                # メッセージを行ごとに分割して送信
-                lines = message.strip().split("\n")
-                for line in lines:
-                    if line.strip():  # 空行でない場合
-                        cmd = ["tmux", "send-keys", "-t", target, line, "Enter"]
-                        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                # メッセージサイズチェックと分割送信
+                if len(message) > chunk_size:
+                    self.logger.info(
+                        f"Large message detected ({len(message)} chars), splitting into chunks of {chunk_size}"
+                    )
+                    success = self._send_large_message(session_name, target, message, chunk_size)
+                    if not success:
+                        error_message = f"Failed to send large message ({len(message)} chars)"
+                else:
+                    # 通常サイズの一括送信
+                    success = self._send_single_message(session_name, target, message)
+                    if not success:
+                        error_message = f"Failed to send message ({len(message)} chars)"
 
-                        if result.returncode != 0:
-                            success = False
-                            error_message = f"tmux send-keys failed: {result.stderr}"
-                            break
-                    else:
-                        # 空行は改行のみ送信
-                        cmd = ["tmux", "send-keys", "-t", target, "Enter"]
-                        subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+                # 必ず最後に1秒待ってEnterを送信
+                # tmuxで大量テキスト送信後の確定処理として必要
+                time.sleep(1)
+                cmd = ["tmux", "send-keys", "-t", target, "Enter"]
+                subprocess.run(cmd, capture_output=True, text=True, timeout=10)
 
                 self.logger.info(f"Send-keys executed: {target} <- {message[:50]}...")
             else:
+                # ドライランでも同様の待機時間をシミュレート
+                time.sleep(1)
                 self.logger.info(
-                    f"[DRY-RUN] Send-keys: {session_name}:{target_pane} <- {message[:50]}..."
+                    f"[DRY-RUN] Send-keys: {session_name}:{target_pane} <- {message[:50]}... + Enter (1s delay)"
                 )
 
         except subprocess.TimeoutExpired:
@@ -222,6 +237,77 @@ class SendKeysCLI:
                 return [dict(row) for row in cursor.fetchall()]
         except sqlite3.Error as e:
             raise DatabaseOperationError("get_logs_by_session", "SELECT", e)
+
+    def _send_single_message(self, session_name: str, target: str, message: str) -> bool:
+        """単一メッセージの送信（一括送信）"""
+        try:
+            with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as temp_file:
+                temp_file.write(message)
+                temp_file_path = temp_file.name
+
+            try:
+                # tmux load-bufferでテキストを読み込み
+                load_cmd = ["tmux", "load-buffer", "-t", session_name, temp_file_path]
+                result = subprocess.run(load_cmd, capture_output=True, text=True, timeout=30)
+
+                if result.returncode != 0:
+                    self.logger.error(
+                        f"Load-buffer failed (file size: {len(message)} chars): {result.stderr}"
+                    )
+                    return False
+
+                self.logger.debug(f"Load-buffer successful for {len(message)} characters")
+
+                # tmux paste-bufferでペインに貼り付け
+                paste_cmd = ["tmux", "paste-buffer", "-t", target]
+                result = subprocess.run(paste_cmd, capture_output=True, text=True, timeout=30)
+
+                if result.returncode != 0:
+                    self.logger.error(f"Paste-buffer failed (target: {target}): {result.stderr}")
+                    return False
+
+                self.logger.debug(f"Paste-buffer successful to target: {target}")
+                return True
+
+            finally:
+                try:
+                    os.unlink(temp_file_path)
+                except OSError:
+                    pass
+
+        except Exception as e:
+            self.logger.error(f"Error in single message send: {e}")
+            return False
+
+    def _send_large_message(
+        self, session_name: str, target: str, message: str, chunk_size: int
+    ) -> bool:
+        """大容量メッセージの分割送信"""
+        try:
+            chunks = []
+            for i in range(0, len(message), chunk_size):
+                chunk = message[i : i + chunk_size]
+                chunks.append(chunk)
+
+            self.logger.info(f"Splitting message into {len(chunks)} chunks")
+
+            for i, chunk in enumerate(chunks):
+                self.logger.debug(f"Sending chunk {i + 1}/{len(chunks)} ({len(chunk)} chars)")
+
+                if not self._send_single_message(session_name, target, chunk):
+                    self.logger.error(f"Failed to send chunk {i + 1}/{len(chunks)}")
+                    return False
+
+                # 小さな待機時間を挟む
+                if i < len(chunks) - 1:  # 最後のチャンク以外
+                    time.sleep(0.5)
+
+            self.logger.info(f"Successfully sent all {len(chunks)} chunks")
+            return True
+
+        except Exception as e:
+            self.logger.error(f"Error in large message send: {e}")
+            return False
 
 
 def main():

@@ -54,6 +54,7 @@ class BaseBee:
         self.hive_db_path = Path(self.config.hive_db_path)
         self.session_name = self.config.session_name
         self.pane_map = self.config.pane_mapping
+        self.pane_id_map = self.config.pane_id_mapping
 
         # ログ設定
         self.logger = get_logger(bee_name, self.config)
@@ -99,8 +100,8 @@ class BaseBee:
 
         # 有効なBee名のリスト（設定から取得）
         valid_bee_names = (
-            list(self.config.pane_mapping.keys())
-            if hasattr(self.config, "pane_mapping")
+            list(self.config.pane_id_mapping.keys())
+            if hasattr(self.config, "pane_id_mapping")
             else ["queen", "developer", "qa"]
         )
         if bee_name not in valid_bee_names:
@@ -346,11 +347,12 @@ class BaseBee:
         task_id: int | None = None,
     ):
         """CLI経由でtmux send-keysメッセージを送信"""
-        if target_bee not in self.pane_map:
+        if target_bee not in self.pane_id_map:
             self.logger.warning(f"Unknown target bee: {target_bee}")
             return
 
-        pane = self.pane_map[target_bee]
+        # bee名前から実際のペインIDを取得
+        pane_id = self.pane_id_map[target_bee]
 
         # 構造化されたメッセージを作成
         message_lines = [
@@ -371,21 +373,22 @@ class BaseBee:
         full_message = "\n".join(message_lines)
 
         try:
-            # CLI経由でsend-keys実行
+            # CLI経由でsend-keys実行（bee名前を使用）
+            target_display_name = self.pane_map.get(target_bee, target_bee)
             cmd = [
                 "python",
                 "-m",
                 "bees.cli",
                 "send",
                 self.session_name,
-                pane,
+                pane_id,
                 full_message,
                 "--type",
                 message_type,
                 "--sender",
                 self.bee_name,
                 "--metadata",
-                f'{{"to_bee": "{target_bee}", "subject": "{subject}", "task_id": {task_id}}}',
+                f'{{"to_bee": "{target_bee}", "to_pane": "{target_display_name}", "subject": "{subject}", "task_id": {task_id}}}',
             ]
 
             result = subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=30)
@@ -400,31 +403,33 @@ class BaseBee:
 
     def _send_tmux_notification(self, target_bee: str, message: str):
         """CLI経由で簡単な通知を送信"""
-        if target_bee not in self.pane_map:
+        if target_bee not in self.pane_id_map:
             self.logger.warning(f"Unknown target bee: {target_bee}")
             return
 
-        pane = self.pane_map[target_bee]
+        # bee名前から実際のペインIDを取得
+        pane_id = self.pane_id_map[target_bee]
 
         # 簡単な通知メッセージ構築
         notification = f"\n# {message}\n"
 
         try:
-            # CLI経由でsend-keys実行
+            # CLI経由でsend-keys実行（bee名前を使用）
+            target_display_name = self.pane_map.get(target_bee, target_bee)
             cmd = [
                 "python",
                 "-m",
                 "bees.cli",
                 "send",
                 self.session_name,
-                pane,
+                pane_id,
                 notification,
                 "--type",
                 "notification",
                 "--sender",
                 self.bee_name,
                 "--metadata",
-                f'{{"to_bee": "{target_bee}"}}',
+                f'{{"to_bee": "{target_bee}", "to_pane": "{target_display_name}"}}',
             ]
 
             subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=15)

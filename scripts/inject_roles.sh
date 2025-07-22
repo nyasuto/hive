@@ -1,11 +1,14 @@
 #!/bin/bash
 
-# inject_roles.sh - Inject role definitions into Claude agents via tmux send-keys
+# inject_roles.sh - Inject role definitions into Claude agents via send-keys CLI
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 SESSION_NAME="beehive"
+
+# ヘルパー関数を読み込み
+source "${SCRIPT_DIR}/send_keys_helper.sh"
 
 log_info() { echo -e "\033[36m[INFO]\033[0m $1"; }
 log_success() { echo -e "\033[32m[SUCCESS]\033[0m $1"; }
@@ -40,42 +43,38 @@ check_role_file() {
     return 0
 }
 
-# Inject role into specific pane
+# Inject role into specific pane using CLI
 inject_role_to_pane() {
     local pane_id="$1"
     local role_file="$2"
     local role_name="$3"
     
-    log_info "Injecting $role_name role into pane $pane_id..."
+    log_info "Injecting $role_name role into $pane_id via CLI..."
     
     # Check if role file exists
     if ! check_role_file "$role_file"; then
         return 1
     fi
     
-    # Send clear command first
-    tmux send-keys -t "$SESSION_NAME:0.$pane_id" "clear" Enter
+    # Clear the pane first using CLI
+    send_keys_cli "$SESSION_NAME" "$pane_id" "clear" "command" "system"
     sleep 1
     
-    # Send role content
-    log_info "Sending role definition to $role_name..."
+    # Read role content and prepare injection message
+    log_info "Reading role definition for $role_name..."
+    local role_content
+    role_content=$(cat "$role_file")
     
-    # Create temporary file for role content
-    local temp_file
-    temp_file=$(mktemp)
-    trap 'rm -f "${temp_file:-}"' RETURN
+    # Add role injection prompt
+    role_content="${role_content}
+
+あなたの役割を理解できましたか？準備完了の場合は「準備完了」と応答してください。"
     
-    # Copy role content to temp file and add prompt
-    cp "$role_file" "$temp_file"
-    echo "" >> "$temp_file"
-    echo "あなたの役割を理解できましたか？準備完了の場合は「準備完了」と応答してください。" >> "$temp_file"
+    # Send role injection via CLI with proper metadata
+    log_info "Injecting role via send-keys CLI..."
+    inject_role "$SESSION_NAME" "$pane_id" "$role_content" "$role_name"
     
-    # Send content using tmux load-buffer and paste-buffer
-    tmux load-buffer -t "$SESSION_NAME" "$temp_file"
-    tmux paste-buffer -t "$SESSION_NAME:0.$pane_id"
-    tmux send-keys -t "$SESSION_NAME:0.$pane_id" Enter
-    
-    log_success "$role_name role injected successfully"
+    log_success "$role_name role injected successfully via CLI"
     return 0
 }
 
@@ -86,22 +85,22 @@ inject_all_roles() {
     local success_count=0
     local total_roles=3
     
-    # Inject Queen Bee role (pane 0)
-    if inject_role_to_pane "0" "$PROJECT_ROOT/roles/queen.md" "Queen Bee"; then
+    # Inject Queen Bee role (%0)
+    if inject_role_to_pane "%0" "$PROJECT_ROOT/roles/queen.md" "Queen Bee"; then
         ((success_count++))
     fi
     
     sleep 2
     
-    # Inject Developer Bee role (pane 1) 
-    if inject_role_to_pane "1" "$PROJECT_ROOT/roles/developer.md" "Developer Bee"; then
+    # Inject Developer Bee role (%1) 
+    if inject_role_to_pane "%1" "$PROJECT_ROOT/roles/developer.md" "Developer Bee"; then
         ((success_count++))
     fi
     
     sleep 2
     
-    # Inject QA Bee role (pane 2)
-    if inject_role_to_pane "2" "$PROJECT_ROOT/roles/qa.md" "QA Bee"; then
+    # Inject QA Bee role (%2)
+    if inject_role_to_pane "%2" "$PROJECT_ROOT/roles/qa.md" "QA Bee"; then
         ((success_count++))
     fi
     
@@ -128,13 +127,13 @@ inject_specific_role() {
     
     case "$role_name" in
         "queen"|"0")
-            inject_role_to_pane "0" "$PROJECT_ROOT/roles/queen.md" "Queen Bee"
+            inject_role_to_pane "%0" "$PROJECT_ROOT/roles/queen.md" "Queen Bee"
             ;;
         "developer"|"dev"|"1")
-            inject_role_to_pane "1" "$PROJECT_ROOT/roles/developer.md" "Developer Bee"
+            inject_role_to_pane "%1" "$PROJECT_ROOT/roles/developer.md" "Developer Bee"
             ;;
         "qa"|"2")
-            inject_role_to_pane "2" "$PROJECT_ROOT/roles/qa.md" "QA Bee"
+            inject_role_to_pane "%2" "$PROJECT_ROOT/roles/qa.md" "QA Bee"
             ;;
         *)
             log_error "Unknown role: $role_name"
@@ -144,28 +143,34 @@ inject_specific_role() {
     esac
 }
 
-# Verify role injection
+# Verify role injection using CLI
 verify_roles() {
-    log_info "Verifying role injection..."
+    log_info "Verifying role injection via CLI..."
     
-    # Check if panes are responsive
+    # Check if panes are responsive using CLI
     local responsive_panes=0
     
-    for pane_id in 0 1 2; do
-        # Send a simple test command
-        tmux send-keys -t "$SESSION_NAME:0.$pane_id" "" Enter
-        tmux send-keys -t "$SESSION_NAME:0.$pane_id" "現在の時刻を教えてください" Enter
+    for pane_id in "%0" "%1" "%2"; do
+        log_info "Testing pane $pane_id responsiveness..."
         
-        # Check if pane exists and is active
-        if tmux list-panes -t "$SESSION_NAME:0" -f "#{pane_id}" | grep -q "^$pane_id"; then
+        # Send a simple test question via CLI
+        send_keys_cli "$SESSION_NAME" "$pane_id" "" "heartbeat" "system"
+        sleep 0.5
+        send_keys_cli "$SESSION_NAME" "$pane_id" "現在の時刻を教えてください" "verification" "system"
+        
+        # Check if pane exists and is active using tmux
+        if tmux list-panes -t "$SESSION_NAME:0" | grep -q "$pane_id"; then
             ((responsive_panes++))
+            log_info "Pane $pane_id is active"
+        else
+            log_warning "Pane $pane_id may not be active"
         fi
     done
     
     log_info "Active panes: $responsive_panes/3"
     
     if [[ $responsive_panes -eq 3 ]]; then
-        log_success "All panes are responsive"
+        log_success "All panes are responsive - verification via CLI complete"
         return 0
     else
         log_warning "Some panes may not be responsive"
@@ -176,14 +181,14 @@ verify_roles() {
 # Show help
 show_help() {
     cat << 'EOF'
-🐝 Role Injection Script for Claude Multi-Agent System
+🐝 Role Injection Script for Claude Multi-Agent System (CLI-enabled)
 
 USAGE:
     ./scripts/inject_roles.sh [OPTIONS] [ROLE]
 
 OPTIONS:
     --all, -a           Inject all roles (default)
-    --verify, -v        Verify role injection
+    --verify, -v        Verify role injection  
     --help, -h          Show this help
 
 ROLES:
@@ -192,16 +197,23 @@ ROLES:
     qa, 2              Inject QA Bee role (pane 2)
 
 EXAMPLES:
-    ./scripts/inject_roles.sh                    # Inject all roles
-    ./scripts/inject_roles.sh --all              # Inject all roles
-    ./scripts/inject_roles.sh queen              # Inject Queen role only
-    ./scripts/inject_roles.sh developer          # Inject Developer role only
-    ./scripts/inject_roles.sh --verify           # Verify injection
+    ./scripts/inject_roles.sh                    # Inject all roles via CLI
+    ./scripts/inject_roles.sh --all              # Inject all roles via CLI
+    ./scripts/inject_roles.sh queen              # Inject Queen role only via CLI
+    ./scripts/inject_roles.sh developer          # Inject Developer role only via CLI  
+    ./scripts/inject_roles.sh --verify           # Verify injection via CLI
+
+FEATURES:
+    - Uses send-keys CLI for transparent SQLite logging
+    - All communications are automatically recorded
+    - 1-second delay + Enter finalization for tmux compatibility
+    - Structured role injection with metadata
 
 REQUIREMENTS:
     - Beehive session must be running (./beehive.sh init)
     - Role definition files must exist in roles/ directory
     - Claude agents must be responsive in each pane
+    - send-keys CLI must be available (python -m bees.cli)
 
 EOF
 }

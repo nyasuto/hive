@@ -76,9 +76,10 @@ set_pane_titles() {
     tmux set-option -t "$SESSION_NAME" pane-border-status top
     tmux set-option -t "$SESSION_NAME" pane-border-format "#{?pane_active,#[bg=colour27]#[fg=colour255],#[bg=colour236]#[fg=colour255]} #{pane_title} #{?pane_active,#[default],#[default]}"
     
-    tmux select-pane -t "$SESSION_NAME:0.0" -T "[QUEEN] Planning & Coordination"
-    tmux select-pane -t "$SESSION_NAME:0.1" -T "[DEVELOPER] Implementation"
-    tmux select-pane -t "$SESSION_NAME:0.2" -T "[QA] Testing & Quality"
+    # ペインに名前をつける（タイトルとしてもセット）
+    tmux select-pane -t "$SESSION_NAME:0.0" -T "🐝 Queen Bee"
+    tmux select-pane -t "$SESSION_NAME:0.1" -T "💻 Developer Bee"  
+    tmux select-pane -t "$SESSION_NAME:0.2" -T "🔍 QA Bee"
     
     log_success "Pane titles configured successfully"
 }
@@ -89,22 +90,22 @@ start_claude_instances() {
     # Source helper functions
     source "$PROJECT_ROOT/scripts/send_keys_helper.sh"
     
-    log_info "Starting Queen Bee (pane 0)..."
+    log_info "Starting Queen Bee (queen)..."
     local queen_init="cd $PROJECT_ROOT/workspaces/queen
 claude --dangerously-skip-permissions"
-    send_keys_cli "$SESSION_NAME" "0.0" "$queen_init" "initialization" "system" "${BEEHIVE_DRY_RUN:-false}"
+    send_keys_cli "$SESSION_NAME" "%0" "$queen_init" "initialization" "queen_startup" "${BEEHIVE_DRY_RUN:-false}"
     sleep 3
     
-    log_info "Starting Developer Bee (pane 1)..."
+    log_info "Starting Developer Bee (developer)..."
     local dev_init="cd $PROJECT_ROOT/workspaces/developer  
 claude --dangerously-skip-permissions"
-    send_keys_cli "$SESSION_NAME" "0.1" "$dev_init" "initialization" "system" "${BEEHIVE_DRY_RUN:-false}"
+    send_keys_cli "$SESSION_NAME" "%1" "$dev_init" "initialization" "developer_startup" "${BEEHIVE_DRY_RUN:-false}"
     sleep 3
     
-    log_info "Starting QA Bee (pane 2)..."
+    log_info "Starting QA Bee (qa)..."
     local qa_init="cd $PROJECT_ROOT/workspaces/qa
 claude --dangerously-skip-permissions"
-    send_keys_cli "$SESSION_NAME" "0.2" "$qa_init" "initialization" "system" "${BEEHIVE_DRY_RUN:-false}"
+    send_keys_cli "$SESSION_NAME" "%2" "$qa_init" "initialization" "qa_startup" "${BEEHIVE_DRY_RUN:-false}"
     sleep 3
     
     log_success "All Claude CLI instances started successfully"
