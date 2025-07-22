@@ -35,9 +35,9 @@ class BeehiveConfig:
     pane_mapping: dict[str, str] = field(
         default_factory=lambda: {"queen": "queen", "developer": "developer", "qa": "qa"}
     )
-    # ペインIDマッピング（bee名 -> tmuxペインID）
+    # ペインIDマッピング（bee名 -> tmuxウィンドウID）
     pane_id_mapping: dict[str, str] = field(
-        default_factory=lambda: {"queen": "%0", "developer": "%1", "qa": "%2"}
+        default_factory=lambda: {"queen": "beehive:0", "developer": "beehive:1", "qa": "beehive:2"}
     )
 
     # 通信設定
@@ -174,16 +174,19 @@ class BeehiveConfig:
             if bee not in value:
                 raise ValueError(f"Missing pane ID mapping for bee: {bee}")
 
-        # ペインID形式の検証 (%0, %1, %2 or 0.0, 0.1, 0.2 形式)
+        # ウィンドウID形式の検証 (session:N 形式)
         for bee, pane_id in value.items():
             if not isinstance(pane_id, str) or not pane_id:
                 raise ValueError(f"Invalid pane ID for {bee}: {pane_id}")
-            # %N形式または N.N形式をサポート
-            if not (pane_id.startswith("%") and pane_id[1:].isdigit()) and not (
-                pane_id.count(".") == 1 and pane_id.replace(".", "").isdigit()
-            ):
+            # session:N形式をサポート
+            if ":" not in pane_id:
                 raise ValueError(
-                    f"Invalid pane ID format for {bee}: {pane_id} (expected format: %N or N.N)"
+                    f"Invalid window ID format for {bee}: {pane_id} (expected format: session:N)"
+                )
+            session_part, window_part = pane_id.split(":", 1)
+            if not session_part or not window_part.isdigit():
+                raise ValueError(
+                    f"Invalid window ID format for {bee}: {pane_id} (expected format: session:N)"
                 )
 
     @classmethod

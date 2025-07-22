@@ -59,56 +59,103 @@ create_tmux_session() {
     log_success "tmux session created successfully"
 }
 
-create_panes() {
-    log_info "Creating Bee panes..."
+create_windows() {
+    log_info "Creating Bee windows (1 bee per window)..."
     
-    tmux rename-window -t "$SESSION_NAME:0" "hive"
-    tmux split-window -t "$SESSION_NAME:0" -v -c "$PROJECT_ROOT/workspaces/developer"
-    tmux split-window -t "$SESSION_NAME:0" -h -c "$PROJECT_ROOT/workspaces/qa"
-    tmux select-layout -t "$SESSION_NAME:0" main-horizontal
+    # Window 0: Queen Bee
+    tmux rename-window -t "$SESSION_NAME:0" "queen"
     
-    log_success "3 panes created successfully"
+    # Window 1: Developer Bee  
+    tmux new-window -t "$SESSION_NAME:1" -n "developer" -c "$PROJECT_ROOT/workspaces/developer"
+    
+    # Window 2: QA Bee
+    tmux new-window -t "$SESSION_NAME:2" -n "qa" -c "$PROJECT_ROOT/workspaces/qa"
+    
+    # デフォルトでQueen Beeウィンドウを選択
+    tmux select-window -t "$SESSION_NAME:0"
+    
+    log_success "3 windows created successfully"
 }
 
-set_pane_titles() {
-    log_info "Setting pane titles..."
+set_window_titles() {
+    log_info "Setting window titles and shortcuts..."
     
-    tmux set-option -t "$SESSION_NAME" pane-border-status top
-    tmux set-option -t "$SESSION_NAME" pane-border-format "#{?pane_active,#[bg=colour27]#[fg=colour255],#[bg=colour236]#[fg=colour255]} #{pane_title} #{?pane_active,#[default],#[default]}"
+    # ウィンドウタイトルを設定（既にnew-windowで設定済み）
+    # 追加でアイコン付きタイトルを設定
+    tmux rename-window -t "$SESSION_NAME:0" "🐝 queen"
+    tmux rename-window -t "$SESSION_NAME:1" "💻 developer" 
+    tmux rename-window -t "$SESSION_NAME:2" "🔍 qa"
     
-    # ペインに名前をつける（タイトルとしてもセット）
-    tmux select-pane -t "$SESSION_NAME:0.0" -T "🐝 Queen Bee"
-    tmux select-pane -t "$SESSION_NAME:0.1" -T "💻 Developer Bee"  
-    tmux select-pane -t "$SESSION_NAME:0.2" -T "🔍 QA Bee"
+    # ステータスバーの設定を更新（ウィンドウ表示用）
+    tmux set-option -t "$SESSION_NAME" status-justify centre
+    tmux set-option -t "$SESSION_NAME" window-status-format " #I:#W "
+    tmux set-option -t "$SESSION_NAME" window-status-current-format "#[bg=colour27,fg=colour255] #I:#W #[default]"
     
-    log_success "Pane titles configured successfully"
+    # カスタムキーバインドの設定（移動しやすくするため）
+    # Alt + q/d/a でウィンドウ切り替え（ページャーのような操作感）
+    tmux bind-key -T prefix q select-window -t 0  # Queen
+    tmux bind-key -T prefix d select-window -t 1  # Developer  
+    tmux bind-key -T prefix a select-window -t 2  # QA
+    
+    # Alt + 左右矢印でウィンドウ切り替え
+    tmux bind-key -T prefix Left previous-window
+    tmux bind-key -T prefix Right next-window
+    
+    # Shift + 左右矢印でも可能に
+    tmux bind-key -T prefix S-Left previous-window
+    tmux bind-key -T prefix S-Right next-window
+    
+    log_success "Window titles and shortcuts configured successfully"
 }
 
 start_claude_instances() {
-    log_info "Starting Claude CLI instances..."
+    log_info "Starting Claude CLI instances in separate windows..."
     
     # Source helper functions
     source "$PROJECT_ROOT/scripts/send_keys_helper.sh"
     
-    log_info "Starting Queen Bee (queen)..."
+    log_info "Starting Queen Bee in window 0..."
     local queen_init="cd $PROJECT_ROOT/workspaces/queen
 claude --dangerously-skip-permissions"
-    send_keys_cli "$SESSION_NAME" "%0" "$queen_init" "initialization" "queen_startup" "${BEEHIVE_DRY_RUN:-false}"
+    send_keys_cli "$SESSION_NAME" "$SESSION_NAME:0" "$queen_init" "initialization" "queen_startup" "${BEEHIVE_DRY_RUN:-false}"
     sleep 3
     
-    log_info "Starting Developer Bee (developer)..."
+    log_info "Starting Developer Bee in window 1..."
     local dev_init="cd $PROJECT_ROOT/workspaces/developer  
 claude --dangerously-skip-permissions"
-    send_keys_cli "$SESSION_NAME" "%1" "$dev_init" "initialization" "developer_startup" "${BEEHIVE_DRY_RUN:-false}"
+    send_keys_cli "$SESSION_NAME" "$SESSION_NAME:1" "$dev_init" "initialization" "developer_startup" "${BEEHIVE_DRY_RUN:-false}"
     sleep 3
     
-    log_info "Starting QA Bee (qa)..."
+    log_info "Starting QA Bee in window 2..."
     local qa_init="cd $PROJECT_ROOT/workspaces/qa
 claude --dangerously-skip-permissions"
-    send_keys_cli "$SESSION_NAME" "%2" "$qa_init" "initialization" "qa_startup" "${BEEHIVE_DRY_RUN:-false}"
+    send_keys_cli "$SESSION_NAME" "$SESSION_NAME:2" "$qa_init" "initialization" "qa_startup" "${BEEHIVE_DRY_RUN:-false}"
     sleep 3
     
     log_success "All Claude CLI instances started successfully"
+}
+
+inject_roles() {
+    log_info "Injecting roles into Claude agents..."
+    
+    # Claude起動完了を待つ
+    log_info "Waiting for Claude instances to be ready..."
+    sleep 5
+    
+    # inject_roles.shスクリプトを実行
+    if [ -f "$PROJECT_ROOT/scripts/inject_roles.sh" ]; then
+        log_info "Executing role injection script..."
+        if "$PROJECT_ROOT/scripts/inject_roles.sh" --all; then
+            log_success "Role injection completed successfully"
+            return 0
+        else
+            log_error "Role injection failed"
+            return 1
+        fi
+    else
+        log_error "Role injection script not found: $PROJECT_ROOT/scripts/inject_roles.sh"
+        return 1
+    fi
 }
 
 verify_startup() {
@@ -119,18 +166,22 @@ verify_startup() {
         return 1
     fi
     
-    local pane_count
-    pane_count=$(tmux list-panes -t "$SESSION_NAME:0" | wc -l)
-    if [ "$pane_count" -ne 3 ]; then
-        log_error "Invalid pane count (expected: 3, actual: $pane_count)"
+    local window_count
+    window_count=$(tmux list-windows -t "$SESSION_NAME" | wc -l)
+    if [ "$window_count" -ne 3 ]; then
+        log_error "Invalid window count (expected: 3, actual: $window_count)"
         return 1
     fi
     
     log_success "Beehive startup verification complete"
     log_info "Next steps:"
     log_info "  1. Run ./beehive.sh attach to connect to session"
-    log_info "  2. Verify Claude is running in each pane"
-    log_info "  3. Run ./scripts/inject_roles.sh to inject roles (not implemented)"
+    log_info "  2. Switch between bee windows using:"
+    log_info "     • Ctrl-b + q/d/a (Queen/Developer/QA)"
+    log_info "     • Ctrl-b + ←/→ (Previous/Next window)"
+    log_info "     • Ctrl-b + 0/1/2 (Direct window selection)"
+    log_info "  3. Check each window to verify role understanding"
+    log_info "  4. Use './beehive.sh start-task \"task\"' to begin work"
     
     return 0
 }
@@ -141,13 +192,21 @@ main() {
     check_prerequisites
     cleanup_existing_session
     create_tmux_session
-    create_panes
-    set_pane_titles
+    create_windows
+    set_window_titles
     start_claude_instances
+    
+    # Claude起動後に役割注入を自動実行
+    if inject_roles; then
+        log_info "Role injection successful"
+    else
+        log_warning "Role injection failed, but continuing with initialization"
+    fi
     
     if verify_startup; then
         log_success "=== Beehive Initialization Complete ==="
         log_info "Connect with: tmux attach-session -t $SESSION_NAME"
+        log_info "All bees are ready for tasks!"
     else
         log_error "=== Initialization failed ==="
         exit 1
