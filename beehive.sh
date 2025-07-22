@@ -34,9 +34,10 @@ USAGE:
     ./beehive.sh <command> [options]
 
 COMMANDS:
-    init                 Beehiveを初期化（tmuxセッション作成、Claude起動）
+    init [--force|-f]    Beehiveを初期化（tmuxセッション作成、Claude起動）
     inject-roles         各エージェントに役割を注入
     start-task <task>    Queen Beeにタスクを投入して実行開始
+    task <command>       タスク管理システム操作（task help で詳細）
     status               各Beeの状態を確認
     logs [bee]           ログを表示（bee: queen|developer|qa）
     attach               tmuxセッションに接続
@@ -45,9 +46,11 @@ COMMANDS:
     help                 このヘルプを表示
 
 EXAMPLES:
-    ./beehive.sh init
+    ./beehive.sh init --force
     ./beehive.sh inject-roles
     ./beehive.sh start-task "TODOアプリを作成してください"
+    ./beehive.sh task list pending
+    ./beehive.sh task stats
     ./beehive.sh status
     ./beehive.sh logs queen
     ./beehive.sh attach
@@ -73,15 +76,38 @@ check_session_exists() {
 
 # init コマンド - Beehive初期化
 cmd_init() {
+    local force_init=false
+    
+    # オプション解析
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --force|-f)
+                force_init=true
+                shift
+                ;;
+            *)
+                log_error "不明なオプション: $1"
+                log_info "使用法: ./beehive.sh init [--force|-f]"
+                return 1
+                ;;
+        esac
+    done
+    
     log_info "=== Beehive初期化開始 ==="
     
     if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
-        log_warning "既存のBeehiveセッションが見つかりました"
-        read -p "既存セッションを終了して再作成しますか？ (y/N): " -n 1 -r
-        echo
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            log_info "初期化をキャンセルしました"
-            return 0
+        if [ "$force_init" = true ]; then
+            log_info "強制初期化モード: 既存セッションを停止中..."
+            tmux kill-session -t "$SESSION_NAME" 2>/dev/null || true
+        else
+            log_warning "既存のBeehiveセッションが見つかりました"
+            read -p "既存セッションを終了して再作成しますか？ (y/N): " -n 1 -r
+            echo
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                log_info "初期化をキャンセルしました"
+                log_info "強制初期化: './beehive.sh init --force'"
+                return 0
+            fi
         fi
     fi
     
@@ -127,18 +153,37 @@ cmd_start_task() {
     
     log_info "タスクをQueen Beeに投入中: \"$task\""
     
-    # TODO: 実際のタスク投入機能は issue #3 で実装
-    log_warning "タスク投入機能は未実装です（Issue #3で実装予定）"
-    log_info "現在は Queen Bee（ペイン0）にメッセージを送信します"
-    
-    # 暫定的にQueen Beeにメッセージ送信
-    tmux send-keys -t "$SESSION_NAME:0.0" "## 🎯 新しいタスクが割り当てられました" Enter
-    tmux send-keys -t "$SESSION_NAME:0.0" "**タスク内容:** $task" Enter
-    tmux send-keys -t "$SESSION_NAME:0.0" "" Enter
-    tmux send-keys -t "$SESSION_NAME:0.0" "このタスクを分析し、Developer BeeとQA Beeに適切に分担してください。" Enter
-    
-    log_success "タスク投入完了（暫定実装）"
-    log_info "Queen Beeの応答を確認するには: './beehive.sh attach'"
+    # タスク管理システムを使用してタスクを作成
+    local task_id
+    task_id=$("$SCRIPT_DIR/scripts/task_manager.sh" create "$task" "" "medium" "queen" 2>&1 | head -1)
+    if [[ -n "$task_id" && "$task_id" =~ ^[0-9]+$ ]]; then
+        log_success "タスクID $task_id で作成完了"
+        
+        # Queen BeeにSQLite経由でタスクを通知
+        "$SCRIPT_DIR/scripts/task_manager.sh" message "system" "queen" "task_update" \
+            "新しいタスクが割り当てられました" \
+            "タスク「$task」(ID: $task_id) があなたに割り当てられました。このタスクを分析し、必要に応じてDeveloper BeeやQA Beeに作業を分担してください。詳細は task_manager.sh details $task_id で確認できます。" \
+            "$task_id"
+        
+        # Queen Beeの状態をbusyに更新
+        "$SCRIPT_DIR/scripts/task_manager.sh" bee-state "queen" "busy" "$task_id" "25"
+        
+        # tmux経由でも通知（即座の認識のため）
+        tmux send-keys -t "$SESSION_NAME:0.0" "## 🎯 新しいタスクが割り当てられました (ID: $task_id)" Enter
+        tmux send-keys -t "$SESSION_NAME:0.0" "**タスク内容:** $task" Enter
+        tmux send-keys -t "$SESSION_NAME:0.0" "" Enter
+        tmux send-keys -t "$SESSION_NAME:0.0" "詳細確認: \`./scripts/task_manager.sh details $task_id\`" Enter
+        tmux send-keys -t "$SESSION_NAME:0.0" "このタスクを分析し、必要に応じて適切に分担してください。" Enter
+        tmux send-keys -t "$SESSION_NAME:0.0" "" Enter
+        
+        log_success "タスク投入完了 (ID: $task_id)"
+        log_info "タスク詳細: './scripts/task_manager.sh details $task_id'"
+        log_info "Queen Beeの応答を確認するには: './beehive.sh attach'"
+        log_info "タスク状況確認: './scripts/task_manager.sh list pending'"
+    else
+        log_error "タスク作成に失敗しました"
+        return 1
+    fi
 }
 
 # status コマンド - 状態確認
@@ -167,9 +212,35 @@ cmd_status() {
     echo "📋 ペイン詳細:"
     tmux list-panes -t "$SESSION_NAME:0" -F "  ペイン#{pane_index}: #{pane_title} [#{pane_width}x#{pane_height}] #{?pane_active,(アクティブ),}"
     
-    # TODO: 実際の Bee 状態は hive/schema.sql 実装後に追加
+    # データベースからBee状態とタスク情報を取得
     echo
-    log_warning "詳細なBee状態監視は Issue #4 で実装予定です"
+    echo "🗄️  タスク管理状況:"
+    if [[ -f "$SCRIPT_DIR/scripts/task_manager.sh" ]]; then
+        # アクティブタスク数
+        local task_count
+        task_count=$("$SCRIPT_DIR/scripts/task_manager.sh" list pending | wc -l || echo "0")
+        echo "  アクティブタスク数: $task_count"
+        
+        # Bee状態
+        echo
+        echo "🐝 Bee データベース状態:"
+        "$SCRIPT_DIR/scripts/task_manager.sh" bees 2>/dev/null | while IFS='|' read -r bee_name status current_task workload _ _; do
+            if [[ -n "$bee_name" && "$bee_name" != "bee_name" ]]; then
+                echo "  $bee_name: $status (ワークロード: ${workload}%, タスク: ${current_task:-なし})"
+            fi
+        done
+        
+        # 最近のタスク
+        echo
+        echo "📋 最近のタスク:"
+        "$SCRIPT_DIR/scripts/task_manager.sh" list all | head -5 2>/dev/null | while IFS='|' read -r task_id title status _ assigned_to _ _; do
+            if [[ -n "$task_id" && "$task_id" != "task_id" ]]; then
+                echo "  [$task_id] $title - $status (担当: ${assigned_to:-未割当})"
+            fi
+        done
+    else
+        echo "  タスク管理システム未利用"
+    fi
     
     log_success "状態確認完了"
 }
@@ -267,6 +338,18 @@ cmd_remind() {
     fi
 }
 
+# task コマンド - タスク管理システム操作
+cmd_task() {
+    if [[ ! -f "$SCRIPT_DIR/scripts/task_manager.sh" ]]; then
+        log_error "タスク管理システムが見つかりません"
+        log_info "scripts/task_manager.sh が存在しません"
+        return 1
+    fi
+    
+    # 引数をそのままタスク管理スクリプトに渡す
+    "$SCRIPT_DIR/scripts/task_manager.sh" "$@"
+}
+
 # stop コマンド - 停止
 cmd_stop() {
     if ! tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
@@ -295,7 +378,8 @@ main() {
     
     case "$command" in
         "init")
-            cmd_init
+            shift
+            cmd_init "$@"
             ;;
         "inject-roles")
             cmd_inject_roles
@@ -303,6 +387,10 @@ main() {
         "start-task")
             shift
             cmd_start_task "$@"
+            ;;
+        "task")
+            shift
+            cmd_task "$@"
             ;;
         "status")
             cmd_status

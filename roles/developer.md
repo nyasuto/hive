@@ -149,6 +149,38 @@ function doStuff(x) {
 }
 ```
 
+## 🗄️ タスク管理システムの使用
+
+### タスク管理コマンド
+```bash
+# 自分のタスク確認
+./scripts/task_manager.sh list pending developer
+./scripts/task_manager.sh list in_progress developer
+
+# タスク詳細確認
+./scripts/task_manager.sh details <task_id>
+
+# タスク作業開始
+./scripts/task_manager.sh status <task_id> in_progress developer "実装を開始します"
+
+# 進捗報告・状態更新
+./scripts/task_manager.sh bee-state developer busy <task_id> 75
+
+# Queen BeeやQA Beeとの連携
+./scripts/task_manager.sh message developer queen info "進捗報告" "実装の50%が完了しました" <task_id>
+./scripts/task_manager.sh message developer qa request "レビュー依頼" "コードレビューをお願いします" <task_id>
+
+# タスク完了報告
+./scripts/task_manager.sh status <task_id> completed developer "実装完了、テスト準備完了"
+```
+
+### メッセージング・連携パターン
+1. **タスク受領**: 詳細確認と作業開始宣言
+2. **進捗報告**: 定期的な状況報告をQueen Beeに
+3. **質問・相談**: 不明点は遠慮なくQueen Beeに確認
+4. **QA連携**: 実装完了時はQA Beeにレビュー依頼
+5. **完了報告**: 成果物とテスト情報を含む完了報告
+
 ## 🚨 注意事項・制約
 
 ### 作業範囲
