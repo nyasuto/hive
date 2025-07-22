@@ -127,6 +127,9 @@ pr-ready: clean check test git-check ## Prepare for pull request
 init: ## Initialize Beehive system
 	@./beehive.sh init
 
+inject-roles: ## Inject roles into agents
+	@./beehive.sh inject-roles
+
 terminate: ## Terminate/stop Beehive system
 	@echo "y" | ./beehive.sh stop
 
@@ -146,6 +149,11 @@ start-task: ## Start a task (usage: make start-task TASK="task description")
 		exit 1; \
 	fi
 	@./beehive.sh start-task "$(TASK)"
+
+# Full workflow commands
+setup-and-start: init inject-roles ## Initialize, inject roles, and prepare for tasks
+	@echo "🐝 Beehive is ready for tasks!"
+	@echo "Use: make start-task TASK=\"your task here\""
 
 # Git hooks management
 git-hooks: ## Install git hooks for Git flow enforcement

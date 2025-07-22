@@ -35,6 +35,7 @@ USAGE:
 
 COMMANDS:
     init                 Beehiveを初期化（tmuxセッション作成、Claude起動）
+    inject-roles         各エージェントに役割を注入
     start-task <task>    Queen Beeにタスクを投入して実行開始
     status               各Beeの状態を確認
     logs [bee]           ログを表示（bee: queen|developer|qa）
@@ -45,6 +46,7 @@ COMMANDS:
 
 EXAMPLES:
     ./beehive.sh init
+    ./beehive.sh inject-roles
     ./beehive.sh start-task "TODOアプリを作成してください"
     ./beehive.sh status
     ./beehive.sh logs queen
@@ -52,7 +54,7 @@ EXAMPLES:
     ./beehive.sh stop
 
 NOTES:
-    - 初回起動時は 'init' コマンドを実行してください
+    - 初回起動時: 'init' → 'inject-roles' → 'start-task' の順で実行
     - tmux (>= 3.0) と claude CLI が必要です
     - 各Beeは危険な権限モード (--dangerously-skip-permissions) で動作します
 
@@ -92,7 +94,23 @@ cmd_init() {
     fi
     
     log_success "Beehive初期化完了"
-    log_info "次のステップ: './beehive.sh start-task \"タスク内容\"' でタスクを開始"
+    log_info "次のステップ:"
+    log_info "  1. ./beehive.sh inject-roles で役割を注入"
+    log_info "  2. ./beehive.sh start-task \"タスク内容\" でタスクを開始"
+}
+
+# inject-roles コマンド - 役割注入
+cmd_inject_roles() {
+    check_session_exists || return 1
+    
+    log_info "各エージェントに役割を注入中..."
+    
+    if [ -f "$SCRIPT_DIR/scripts/inject_roles.sh" ]; then
+        "$SCRIPT_DIR/scripts/inject_roles.sh" --all
+    else
+        log_error "scripts/inject_roles.sh が見つかりません"
+        return 1
+    fi
 }
 
 # start-task コマンド - タスク投入
@@ -278,6 +296,9 @@ main() {
     case "$command" in
         "init")
             cmd_init
+            ;;
+        "inject-roles")
+            cmd_inject_roles
             ;;
         "start-task")
             shift
