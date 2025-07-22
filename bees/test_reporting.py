@@ -10,6 +10,7 @@ from pathlib import Path
 # プロジェクトルートをパスに追加
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from bees.config import BeehiveConfig
 from bees.queen_bee import QueenBee
 from bees.worker_bee import WorkerBee
 
@@ -20,8 +21,9 @@ def test_worker_to_queen_reporting():
     print("=" * 50)
 
     # Beeインスタンス作成
-    queen = QueenBee("hive/hive_memory.db")
-    worker = WorkerBee("qa", "quality_assurance", "hive/hive_memory.db")
+    config = BeehiveConfig(hive_db_path="hive/hive_memory.db")
+    queen = QueenBee(config)
+    worker = WorkerBee("qa", "quality_assurance", config)
 
     # テストタスクを作成・割り当て
     print("📋 Creating and assigning test task...")

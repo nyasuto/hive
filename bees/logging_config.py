@@ -259,6 +259,14 @@ class BeehiveLogger:
             **kwargs,
         )
 
+    def log_performance(self, operation: str, duration_ms: float, **kwargs) -> None:
+        """パフォーマンス計測ログ"""
+        self.log_performance_event(operation, duration_ms, **kwargs)
+
+    def log_error(self, message: str, error: Exception | None = None, **kwargs) -> None:
+        """エラーログ（例外情報付き）"""
+        self._log_with_context(logging.ERROR, message, error=error, **kwargs)
+
     def set_context(self, **context) -> None:
         """ログコンテキストを設定"""
         self.context.update(context)
