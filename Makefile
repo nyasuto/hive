@@ -8,23 +8,49 @@ help: ## Show this help message
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-# Development commands
-dev: check ## Quick development setup and checks
+# Development commands with uv
+dev: install-dev check ## Quick development setup and checks
 	@echo "🔧 Development environment ready"
 
-install: ## Install dependencies and setup environment
-	@echo "📦 Installing dependencies..."
+install: ## Install basic dependencies and check system requirements
+	@echo "📦 Installing system dependencies..."
 	@command -v tmux >/dev/null 2>&1 || (echo "❌ tmux is required" && exit 1)
 	@command -v claude >/dev/null 2>&1 || (echo "❌ claude CLI is required" && exit 1)
-	@echo "✅ All dependencies satisfied"
+	@command -v uv >/dev/null 2>&1 || (echo "❌ uv is required - install with: curl -LsSf https://astral.sh/uv/install.sh | sh" && exit 1)
+	@echo "✅ System dependencies satisfied"
 
-# Quality checks
-check: lint shellcheck ## Run all quality checks
+install-dev: install ## Install development dependencies with uv
+	@echo "📦 Installing Python dependencies with uv..."
+	uv sync --extra dev --extra quality --extra security
+	@echo "✅ Python dependencies installed"
+
+install-all: install ## Install all optional dependencies
+	@echo "📦 Installing all dependencies..."
+	uv sync --all-extras
+	@echo "✅ All dependencies installed"
+
+# Quality checks  
+check: lint python-quality shellcheck ## Run all quality checks
 	@echo "✅ All quality checks passed"
 
-lint: ## Run shellcheck on all shell scripts
-	@echo "🔍 Running shellcheck..."
-	@find . -name "*.sh" -not -path "./node_modules/*" -exec shellcheck {} + || echo "⚠️  shellcheck not available, skipping..."
+python-quality: ## Run Python quality checks (black, isort, mypy, ruff)
+	@echo "🔍 Running Python quality checks..."
+	uv run black --check bees/
+	uv run isort --check-only bees/
+	uv run ruff check bees/
+	uv run mypy bees/
+	@echo "✅ Python quality checks passed"
+
+lint: python-quality ## Alias for python-quality
+
+python-format: ## Format Python code  
+	@echo "🎨 Formatting Python code..."
+	uv run black bees/
+	uv run isort bees/
+	uv run ruff --fix bees/
+	@echo "✅ Python code formatted"
+
+format: python-format ## Alias for python-format
 
 shellcheck: ## Run shellcheck specifically
 	@echo "🔍 Running detailed shellcheck..."
@@ -43,9 +69,31 @@ format: ## Format shell scripts (if shfmt is available)
 		echo "⚠️  shfmt not installed, run: brew install shfmt"; \
 	fi
 
-# Testing
-test: test-scripts test-beehive ## Run all tests
+# Testing with uv
+test: test-python test-scripts ## Run all tests
 	@echo "🧪 All tests completed"
+
+test-python: ## Run Python tests with pytest
+	@echo "🧪 Running Python tests..."
+	uv run pytest -v
+	@echo "✅ Python tests completed"
+
+test-coverage: ## Run tests with coverage report
+	@echo "🧪 Running tests with coverage..."
+	uv run pytest --cov=bees --cov-report=html --cov-report=term-missing
+	@echo "✅ Coverage report generated in htmlcov/"
+
+test-unit: ## Run unit tests only  
+	@echo "🧪 Running unit tests..."
+	uv run pytest -v -m "unit"
+
+test-integration-python: ## Run Python integration tests
+	@echo "🧪 Running Python integration tests..."
+	uv run pytest -v -m "integration"
+
+test-performance: ## Run performance tests
+	@echo "🧪 Running performance tests..."
+	uv run pytest -v -m "performance" --benchmark-only
 
 test-scripts: ## Test script syntax and basic functionality
 	@echo "🧪 Testing script syntax..."
