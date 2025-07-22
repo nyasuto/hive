@@ -1,0 +1,106 @@
+#!/bin/bash
+
+# Simple pre-commit hook for Claude Multi-Agent Development System (Beehive)
+# Enforces Git flow and delegates quality checks to Makefile
+
+set -euo pipefail
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+print_success() {
+    echo -e "${GREEN}✅ $1${NC}"
+}
+
+print_error() {
+    echo -e "${RED}❌ $1${NC}"
+}
+
+print_warning() {
+    echo -e "${YELLOW}⚠️  $1${NC}"
+}
+
+print_info() {
+    echo -e "${BLUE}ℹ️  $1${NC}"
+}
+
+# Get current branch name
+get_current_branch() {
+    git branch --show-current
+}
+
+# Check branch naming and prevent main commits
+check_git_flow() {
+    local branch=$(get_current_branch)
+    
+    # Prevent direct commits to main/master
+    if [[ "$branch" =~ ^(main|master)$ ]]; then
+        print_error "Direct commits to main/master branch are not allowed!"
+        print_info "Please create a feature branch:"
+        print_info "  git checkout -b feat/issue-X-description"
+        print_info "  git checkout -b fix/issue-X-description"
+        return 1
+    fi
+    
+    # Check feature branch naming convention
+    if [[ ! "$branch" =~ ^(feat|fix|hotfix|docs|test|refactor|ci|chore|perf|security|deps)/ ]]; then
+        print_warning "Branch name '$branch' doesn't follow convention"
+        print_info "Recommended format: <type>/<description>"
+        print_info "  feat/new-feature"
+        print_info "  fix/bug-description"
+        print_info "  docs/update-readme"
+    else
+        print_success "Branch naming: OK"
+    fi
+    
+    return 0
+}
+
+# Run quality checks via Makefile
+run_quality_checks() {
+    if [[ -f "Makefile" ]]; then
+        print_info "Running quality checks..."
+        
+        # Run make check (includes lint, shellcheck, etc.)
+        if make check >/dev/null 2>&1; then
+            print_success "Quality checks: PASSED"
+        else
+            print_error "Quality checks: FAILED"
+            print_info "Run 'make check' to see detailed errors"
+            return 1
+        fi
+    else
+        print_warning "No Makefile found, skipping quality checks"
+    fi
+    
+    return 0
+}
+
+# Main execution
+main() {
+    echo -e "${BLUE}🐝 Beehive Pre-commit Hook${NC}"
+    echo "=================================="
+    
+    local exit_code=0
+    
+    # Run checks
+    check_git_flow || exit_code=1
+    run_quality_checks || exit_code=1
+    
+    echo "=================================="
+    
+    if [[ $exit_code -eq 0 ]]; then
+        print_success "All checks passed! ✨"
+    else
+        print_error "Pre-commit checks failed!"
+        print_info "Fix issues above or use --no-verify to bypass"
+    fi
+    
+    return $exit_code
+}
+
+main "$@"
