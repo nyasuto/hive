@@ -11,6 +11,7 @@ import json
 import sqlite3
 import subprocess
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -110,10 +111,18 @@ class SendKeysCLI:
                         cmd = ["tmux", "send-keys", "-t", target, "Enter"]
                         subprocess.run(cmd, capture_output=True, text=True, timeout=10)
 
+                # 必ず最後に1秒待ってEnterを送信
+                # tmuxで大量テキスト送信後の確定処理として必要
+                time.sleep(1)
+                cmd = ["tmux", "send-keys", "-t", target, "Enter"]
+                subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+
                 self.logger.info(f"Send-keys executed: {target} <- {message[:50]}...")
             else:
+                # ドライランでも同様の待機時間をシミュレート
+                time.sleep(1)
                 self.logger.info(
-                    f"[DRY-RUN] Send-keys: {session_name}:{target_pane} <- {message[:50]}..."
+                    f"[DRY-RUN] Send-keys: {session_name}:{target_pane} <- {message[:50]}... + Enter (1s delay)"
                 )
 
         except subprocess.TimeoutExpired:
