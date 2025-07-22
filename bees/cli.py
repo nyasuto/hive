@@ -300,7 +300,7 @@ class SendKeysCLI:
 
                 # 小さな待機時間を挟む
                 if i < len(chunks) - 1:  # 最後のチャンク以外
-                    time.sleep(0.5)
+                    time.sleep(1)
 
             self.logger.info(f"Successfully sent all {len(chunks)} chunks")
             return True

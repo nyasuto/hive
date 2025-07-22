@@ -583,6 +583,30 @@ class QueenBee(BaseBee):
         task_desc = task["description"].lower()
         task_text = task_title + " " + task_desc
 
+        # Analyst関連キーワード
+        analyst_keywords = [
+            "analysis",
+            "analyze",
+            "metrics",
+            "performance",
+            "report",
+            "assessment",
+            "evaluate",
+            "measure",
+            "profile",
+            "benchmark",
+        ]
+        if any(keyword in task_text for keyword in analyst_keywords):
+            if "analyst" in self.available_bees:
+                self.logger.log_event(
+                    "specialized_assignment",
+                    "Assigned to analyst based on keywords",
+                    "DEBUG",
+                    task_id=task.get("task_id"),
+                    specialization="analyst",
+                )
+                return "analyst"
+
         # QA関連キーワード
         qa_keywords = ["test", "qa", "quality", "bug", "verify", "check", "validation", "review"]
         if any(keyword in task_text for keyword in qa_keywords):

@@ -33,11 +33,21 @@ class BeehiveConfig:
     session_name: str = "beehive"
     # bee名前をそのまま使用（より直感的）
     pane_mapping: dict[str, str] = field(
-        default_factory=lambda: {"queen": "queen", "developer": "developer", "qa": "qa"}
+        default_factory=lambda: {
+            "queen": "queen",
+            "developer": "developer",
+            "qa": "qa",
+            "analyst": "analyst",
+        }
     )
     # ペインIDマッピング（bee名 -> tmuxウィンドウID）
     pane_id_mapping: dict[str, str] = field(
-        default_factory=lambda: {"queen": "beehive:0", "developer": "beehive:1", "qa": "beehive:2"}
+        default_factory=lambda: {
+            "queen": "beehive:0",
+            "developer": "beehive:1",
+            "qa": "beehive:2",
+            "analyst": "beehive:3",
+        }
     )
 
     # 通信設定
@@ -59,7 +69,7 @@ class BeehiveConfig:
     memory_cleanup_interval: int = 1800  # seconds
 
     # Queen Bee設定
-    available_bees: list[str] = field(default_factory=lambda: ["developer", "qa"])
+    available_bees: list[str] = field(default_factory=lambda: ["developer", "qa", "analyst"])
     task_assignment_strategy: str = "balanced"  # balanced, priority, workload
     max_tasks_per_bee: int = 3
 
@@ -160,7 +170,7 @@ class BeehiveConfig:
         if not isinstance(value, dict):
             raise ValueError("Pane mapping must be a dictionary")
 
-        required_bees = ["queen", "developer", "qa"]
+        required_bees = ["queen", "developer", "qa", "analyst"]
         for bee in required_bees:
             if bee not in value:
                 raise ValueError(f"Missing pane mapping for bee: {bee}")
@@ -175,7 +185,7 @@ class BeehiveConfig:
         if not isinstance(value, dict):
             raise ValueError("Pane ID mapping must be a dictionary")
 
-        required_bees = ["queen", "developer", "qa"]
+        required_bees = ["queen", "developer", "qa", "analyst"]
         for bee in required_bees:
             if bee not in value:
                 raise ValueError(f"Missing pane ID mapping for bee: {bee}")

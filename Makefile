@@ -1,6 +1,6 @@
 # Makefile for Claude Multi-Agent Development System (Beehive) - PoC Version
 
-.PHONY: help install format check test clean init status logs start-task pre-commit setup dev-setup
+.PHONY: help install format check quality test clean init status logs start-task pre-commit setup dev-setup
 
 # Default target
 help: ## Show available commands
@@ -30,6 +30,9 @@ check: ## Run quality checks
 	@uv run ruff check bees/
 	@uv run ruff format --check bees/
 	@echo "✅ Quality checks passed"
+
+quality: format check ## Run comprehensive quality pipeline (format + check)
+	@echo "🏆 Quality pipeline completed successfully!"
 
 # Testing
 test: ## Run all tests
