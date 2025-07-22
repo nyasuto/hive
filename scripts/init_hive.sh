@@ -86,19 +86,25 @@ set_pane_titles() {
 start_claude_instances() {
     log_info "Starting Claude CLI instances..."
     
+    # Source helper functions
+    source "$PROJECT_ROOT/scripts/send_keys_helper.sh"
+    
     log_info "Starting Queen Bee (pane 0)..."
-    tmux send-keys -t "$SESSION_NAME:0.0" "cd $PROJECT_ROOT/workspaces/queen" Enter
-    tmux send-keys -t "$SESSION_NAME:0.0" "claude --dangerously-skip-permissions" Enter
+    local queen_init="cd $PROJECT_ROOT/workspaces/queen
+claude --dangerously-skip-permissions"
+    send_keys_cli "$SESSION_NAME" "0.0" "$queen_init" "initialization" "system" "${BEEHIVE_DRY_RUN:-false}"
     sleep 3
     
     log_info "Starting Developer Bee (pane 1)..."
-    tmux send-keys -t "$SESSION_NAME:0.1" "cd $PROJECT_ROOT/workspaces/developer" Enter  
-    tmux send-keys -t "$SESSION_NAME:0.1" "claude --dangerously-skip-permissions" Enter
+    local dev_init="cd $PROJECT_ROOT/workspaces/developer  
+claude --dangerously-skip-permissions"
+    send_keys_cli "$SESSION_NAME" "0.1" "$dev_init" "initialization" "system" "${BEEHIVE_DRY_RUN:-false}"
     sleep 3
     
     log_info "Starting QA Bee (pane 2)..."
-    tmux send-keys -t "$SESSION_NAME:0.2" "cd $PROJECT_ROOT/workspaces/qa" Enter
-    tmux send-keys -t "$SESSION_NAME:0.2" "claude --dangerously-skip-permissions" Enter
+    local qa_init="cd $PROJECT_ROOT/workspaces/qa
+claude --dangerously-skip-permissions"
+    send_keys_cli "$SESSION_NAME" "0.2" "$qa_init" "initialization" "system" "${BEEHIVE_DRY_RUN:-false}"
     sleep 3
     
     log_success "All Claude CLI instances started successfully"

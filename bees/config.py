@@ -24,6 +24,7 @@ class BeehiveConfig:
 
     # データベース設定
     hive_db_path: str = "hive/hive_memory.db"
+    db_path: str = "hive/hive_memory.db"  # CLI用のエイリアス
     db_timeout: float = 30.0
     db_backup_enabled: bool = True
     db_backup_interval: int = 3600  # seconds

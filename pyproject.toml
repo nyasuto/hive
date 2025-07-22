@@ -84,6 +84,7 @@ Documentation = "https://github.com/nyasuto/hive#readme"
 
 [project.scripts]
 beehive = "bees.cli:main"
+beehive-send-keys = "bees.cli:main"
 
 # Black設定
 [tool.black]

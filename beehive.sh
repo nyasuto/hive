@@ -168,13 +168,16 @@ cmd_start_task() {
         # Queen Beeの状態をbusyに更新
         "$SCRIPT_DIR/scripts/task_manager.sh" bee-state "queen" "busy" "$task_id" "25"
         
-        # tmux経由でも通知（即座の認識のため）
-        tmux send-keys -t "$SESSION_NAME:0.0" "## 🎯 新しいタスクが割り当てられました (ID: $task_id)" Enter
-        tmux send-keys -t "$SESSION_NAME:0.0" "**タスク内容:** $task" Enter
-        tmux send-keys -t "$SESSION_NAME:0.0" "" Enter
-        tmux send-keys -t "$SESSION_NAME:0.0" "詳細確認: \`./scripts/task_manager.sh details $task_id\`" Enter
-        tmux send-keys -t "$SESSION_NAME:0.0" "このタスクを分析し、必要に応じて適切に分担してください。" Enter
-        tmux send-keys -t "$SESSION_NAME:0.0" "" Enter
+        # CLI経由でタスク割り当て通知
+        source "./scripts/send_keys_helper.sh"
+        
+        local task_message="## 🎯 新しいタスクが割り当てられました (ID: $task_id)
+**タスク内容:** $task
+
+詳細確認: \`./scripts/task_manager.sh details $task_id\`
+このタスクを分析し、必要に応じて適切に分担してください。"
+
+        assign_task "$SESSION_NAME" "0.0" "$task_message" "system" "${BEEHIVE_DRY_RUN:-false}"
         
         log_success "タスク投入完了 (ID: $task_id)"
         log_info "タスク詳細: './scripts/task_manager.sh details $task_id'"
@@ -314,18 +317,17 @@ cmd_remind() {
     log_info "暫定的に手動リマインダーを送信します"
     
     if [ -n "$target_bee" ]; then
+        source "./scripts/send_keys_helper.sh"
+        
         case "$target_bee" in
             "queen"|"0")
-                tmux send-keys -t "$SESSION_NAME:0.0" "" Enter
-                tmux send-keys -t "$SESSION_NAME:0.0" "🔔 [ROLE REMINDER] あなたはQueen Beeです。タスクの計画・分解・指示を担当してください。" Enter
+                inject_role "$SESSION_NAME" "0.0" "🔔 [ROLE REMINDER] あなたはQueen Beeです。タスクの計画・分解・指示を担当してください。" "${BEEHIVE_DRY_RUN:-false}"
                 ;;
             "developer"|"dev"|"1")
-                tmux send-keys -t "$SESSION_NAME:0.1" "" Enter
-                tmux send-keys -t "$SESSION_NAME:0.1" "🔔 [ROLE REMINDER] あなたはDeveloper Beeです。コードの実装を担当してください。" Enter
+                inject_role "$SESSION_NAME" "0.1" "🔔 [ROLE REMINDER] あなたはDeveloper Beeです。コードの実装を担当してください。" "${BEEHIVE_DRY_RUN:-false}"
                 ;;
             "qa"|"2")
-                tmux send-keys -t "$SESSION_NAME:0.2" "" Enter
-                tmux send-keys -t "$SESSION_NAME:0.2" "🔔 [ROLE REMINDER] あなたはQA Beeです。テストと品質保証を担当してください。" Enter
+                inject_role "$SESSION_NAME" "0.2" "🔔 [ROLE REMINDER] あなたはQA Beeです。テストと品質保証を担当してください。" "${BEEHIVE_DRY_RUN:-false}"
                 ;;
         esac
         log_success "$target_bee にリマインダーを送信しました"
