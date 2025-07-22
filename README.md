@@ -38,7 +38,7 @@ AIエージェントが協調して開発タスクを遂行する、tmuxベー�
 - 以下のツールがインストール済み：
   - tmux (>= 3.0)
   - sqlite3
-  - Python 3.8+
+  - Python 3.12+, uv, ruff
   - claude CLI (`claude --dangerously-skip-permissions`が実行可能)
 
 ## クイックスタート
@@ -310,9 +310,9 @@ sqlite3 hive/hive_memory.db "SELECT * FROM bee_messages WHERE processed=0"
 ## 開発ロードマップ
 
 ### Phase 1: MVP (現在)
-- [x] tmux内でのClaude起動
-- [x] send-keysによる役割注入
-- [x] Beekeeperからのタスク投入
+- [ ] tmux内でのClaude起動
+- [ ] send-keysによる役割注入
+- [ ] Beekeeperからのタスク投入
 - [ ] 基本的な自律実行
 
 ### Phase 2: 強化
