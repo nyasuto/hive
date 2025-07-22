@@ -83,7 +83,7 @@ inject_all_roles() {
     log_info "=== Role Injection Started ==="
     
     local success_count=0
-    local total_roles=3
+    local total_roles=4
     
     # Inject Queen Bee role (window 0)
     if inject_role_to_pane "0" "$PROJECT_ROOT/roles/queen.md" "Queen Bee"; then
@@ -101,6 +101,13 @@ inject_all_roles() {
     
     # Inject QA Bee role (window 2)
     if inject_role_to_pane "2" "$PROJECT_ROOT/roles/qa.md" "QA Bee"; then
+        ((success_count++))
+    fi
+    
+    sleep 2
+    
+    # Inject Analyst Bee role (window 3)
+    if inject_role_to_pane "3" "$PROJECT_ROOT/roles/analyst.md" "Analyst Bee"; then
         ((success_count++))
     fi
     
@@ -135,9 +142,12 @@ inject_specific_role() {
         "qa"|"2")
             inject_role_to_pane "2" "$PROJECT_ROOT/roles/qa.md" "QA Bee"
             ;;
+        "analyst"|"3")
+            inject_role_to_pane "3" "$PROJECT_ROOT/roles/analyst.md" "Analyst Bee"
+            ;;
         *)
             log_error "Unknown role: $role_name"
-            log_info "Available roles: queen, developer, qa"
+            log_info "Available roles: queen, developer, qa, analyst"
             return 1
             ;;
     esac
@@ -150,7 +160,7 @@ verify_roles() {
     # Check if panes are responsive using CLI
     local responsive_panes=0
     
-    for window_id in "0" "1" "2"; do
+    for window_id in "0" "1" "2" "3"; do
         log_info "Testing window $window_id responsiveness..."
         
         # Send a simple test question via CLI
@@ -167,9 +177,9 @@ verify_roles() {
         fi
     done
     
-    log_info "Active windows: $responsive_panes/3"
+    log_info "Active windows: $responsive_panes/4"
     
-    if [[ $responsive_panes -eq 3 ]]; then
+    if [[ $responsive_panes -eq 4 ]]; then
         log_success "All windows are responsive - verification via CLI complete"
         return 0
     else
@@ -195,6 +205,7 @@ ROLES:
     queen, 0           Inject Queen Bee role (window 0)
     developer, dev, 1  Inject Developer Bee role (window 1)  
     qa, 2              Inject QA Bee role (window 2)
+    analyst, 3         Inject Analyst Bee role (window 3)
 
 EXAMPLES:
     ./scripts/inject_roles.sh                    # Inject all roles via CLI
@@ -235,7 +246,7 @@ main() {
             check_session && inject_all_roles
             exit $?
             ;;
-        "queen"|"developer"|"dev"|"qa"|"0"|"1"|"2")
+        "queen"|"developer"|"dev"|"qa"|"analyst"|"0"|"1"|"2"|"3")
             check_session && inject_specific_role "$command"
             exit $?
             ;;

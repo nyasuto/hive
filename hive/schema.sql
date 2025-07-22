@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     description TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'completed', 'failed', 'cancelled')),
     priority TEXT NOT NULL DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'critical')),
-    assigned_to TEXT, -- 'queen', 'developer', 'qa', or NULL for unassigned
+    assigned_to TEXT, -- 'queen', 'developer', 'qa', 'analyst', or NULL for unassigned
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     started_at DATETIME,
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     tags TEXT, -- JSON array of tags
     metadata TEXT, -- JSON for additional task data
     parent_task_id INTEGER REFERENCES tasks(task_id),
-    created_by TEXT DEFAULT 'human' -- 'human', 'queen', 'developer', 'qa'
+    created_by TEXT DEFAULT 'human' -- 'human', 'queen', 'developer', 'qa', 'analyst'
 );
 
 -- Task dependencies - manage task ordering and dependencies
@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS task_dependencies (
 CREATE TABLE IF NOT EXISTS task_assignments (
     assignment_id INTEGER PRIMARY KEY AUTOINCREMENT,
     task_id INTEGER NOT NULL REFERENCES tasks(task_id) ON DELETE CASCADE,
-    assigned_to TEXT NOT NULL, -- 'queen', 'developer', 'qa'
+    assigned_to TEXT NOT NULL, -- 'queen', 'developer', 'qa', 'analyst'
     assigned_by TEXT NOT NULL, -- who made the assignment
     assignment_type TEXT NOT NULL DEFAULT 'primary' CHECK (assignment_type IN ('primary', 'reviewer', 'collaborator')),
     assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS task_assignments (
 CREATE TABLE IF NOT EXISTS task_activity (
     activity_id INTEGER PRIMARY KEY AUTOINCREMENT,
     task_id INTEGER NOT NULL REFERENCES tasks(task_id) ON DELETE CASCADE,
-    bee_name TEXT NOT NULL, -- 'queen', 'developer', 'qa', 'system'
+    bee_name TEXT NOT NULL, -- 'queen', 'developer', 'qa', 'analyst', 'system'
     activity_type TEXT NOT NULL, -- 'created', 'updated', 'assigned', 'started', 'completed', 'comment', etc.
     description TEXT NOT NULL,
     old_value TEXT, -- for tracking changes
@@ -74,8 +74,8 @@ CREATE TABLE IF NOT EXISTS task_activity (
 -- Inter-bee messaging system
 CREATE TABLE IF NOT EXISTS bee_messages (
     message_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    from_bee TEXT NOT NULL, -- 'queen', 'developer', 'qa', 'system'
-    to_bee TEXT NOT NULL, -- 'queen', 'developer', 'qa', 'all'
+    from_bee TEXT NOT NULL, -- 'queen', 'developer', 'qa', 'analyst', 'system'
+    to_bee TEXT NOT NULL, -- 'queen', 'developer', 'qa', 'analyst', 'all'
     message_type TEXT NOT NULL DEFAULT 'info' CHECK (message_type IN ('info', 'question', 'request', 'response', 'alert', 'task_update')),
     subject TEXT,
     content TEXT NOT NULL,
@@ -92,7 +92,7 @@ CREATE TABLE IF NOT EXISTS bee_messages (
 -- Bee state tracking - monitor agent status and health
 CREATE TABLE IF NOT EXISTS bee_states (
     state_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    bee_name TEXT NOT NULL UNIQUE, -- 'queen', 'developer', 'qa'
+    bee_name TEXT NOT NULL UNIQUE, -- 'queen', 'developer', 'qa', 'analyst'
     status TEXT NOT NULL DEFAULT 'idle' CHECK (status IN ('idle', 'busy', 'waiting', 'offline', 'error')),
     current_task_id INTEGER REFERENCES tasks(task_id),
     last_activity DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -220,11 +220,12 @@ END;
 -- INITIAL DATA SETUP
 -- ====================
 
--- Initialize bee states for the three standard bees
+-- Initialize bee states for the four standard bees including analyst
 INSERT OR IGNORE INTO bee_states (bee_name, status, capabilities) VALUES
 ('queen', 'idle', '["task_management", "coordination", "planning", "delegation"]'),
 ('developer', 'idle', '["coding", "implementation", "debugging", "refactoring"]'),
-('qa', 'idle', '["testing", "quality_assurance", "bug_reporting", "validation"]');
+('qa', 'idle', '["testing", "quality_assurance", "bug_reporting", "validation"]'),
+('analyst', 'idle', '["performance_analysis", "code_metrics", "quality_assessment", "report_generation", "trend_analysis"]');
 
 -- ====================
 -- VIEWS FOR COMMON QUERIES

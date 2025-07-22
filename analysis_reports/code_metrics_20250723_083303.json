@@ -1,0 +1,33 @@
+{
+  "analysis_type": "code_metrics",
+  "target_path": "bees/analyst_bee.py",
+  "timestamp": "2025-07-23T08:33:03.462228",
+  "metrics": {
+    "total_lines": 796,
+    "code_lines": 601,
+    "blank_lines": 148,
+    "comment_lines": 47,
+    "comment_ratio": 0.059045226130653265,
+    "cyclomatic_complexity": 166,
+    "maintainability_index": 0
+  },
+  "quality_score": 25.0,
+  "issues": [
+    {
+      "type": "documentation",
+      "severity": "medium",
+      "message": "Low comment ratio: 5.90%. Consider adding more documentation."
+    },
+    {
+      "type": "complexity",
+      "severity": "high",
+      "message": "High cyclomatic complexity: 166. Consider refactoring."
+    },
+    {
+      "type": "maintainability",
+      "severity": "high",
+      "message": "Low maintainability index: 0.0. Code may be difficult to maintain."
+    }
+  ],
+  "summary": "Quality Score: 25.0/100 | Issues: 3"
+}
