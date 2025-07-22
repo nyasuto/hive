@@ -1,4 +1,5 @@
-name: Makefile CI
+name: Beaver Knowledge Base Generation
+description: This workflow generates a Beaver knowledge base and deploys it to GitHub Pages.
 
 on:
   push:

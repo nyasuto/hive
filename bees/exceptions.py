@@ -130,6 +130,28 @@ class TmuxSessionError(CommunicationError):
         self.original_error = original_error
 
 
+class TmuxCommandError(CommunicationError):
+    """
+    tmuxコマンド実行エラー
+
+    tmuxコマンドの実行に失敗した場合
+    """
+
+    def __init__(self, command: str, original_error: Exception | None = None):
+        message = f"tmux command execution failed: {command}"
+        if original_error:
+            message += f" (Cause: {original_error})"
+
+        metadata = {
+            "command": command,
+            "original_error": str(original_error) if original_error else None,
+        }
+
+        super().__init__(message, error_code="TMUX_COMMAND_FAILED", metadata=metadata)
+        self.command = command
+        self.original_error = original_error
+
+
 class MessageSendError(CommunicationError):
     """
     メッセージ送信エラー
@@ -166,6 +188,28 @@ class ValidationError(BeehiveError):
     """入力検証関連エラーの基底クラス"""
 
     pass
+
+
+class BeeNotFoundError(ValidationError):
+    """
+    Bee検索エラー
+
+    指定されたBeeが見つからない場合
+    """
+
+    def __init__(self, bee_name: str, available_bees: list[str] | None = None):
+        message = f"Bee not found: {bee_name}"
+        if available_bees:
+            message += f" (Available bees: {', '.join(available_bees)})"
+
+        metadata = {
+            "bee_name": bee_name,
+            "available_bees": available_bees or [],
+        }
+
+        super().__init__(message, error_code="BEE_NOT_FOUND", metadata=metadata)
+        self.bee_name = bee_name
+        self.available_bees = available_bees or []
 
 
 class TaskValidationError(ValidationError):
