@@ -92,10 +92,10 @@ set_window_titles() {
     tmux set-option -t "$SESSION_NAME" window-status-current-format "#[bg=colour27,fg=colour255] #I:#W #[default]"
     
     # カスタムキーバインドの設定（移動しやすくするため）
-    # Alt + q/d/a でウィンドウ切り替え（ページャーのような操作感）
+    # デタッチと競合しないよう、別のキーを使用
     tmux bind-key -T prefix q select-window -t 0  # Queen
-    tmux bind-key -T prefix d select-window -t 1  # Developer  
-    tmux bind-key -T prefix a select-window -t 2  # QA
+    tmux bind-key -T prefix w select-window -t 1  # Developer (Worker)
+    tmux bind-key -T prefix e select-window -t 2  # QA (Examiner)
     
     # Alt + 左右矢印でウィンドウ切り替え
     tmux bind-key -T prefix Left previous-window
@@ -117,19 +117,19 @@ start_claude_instances() {
     log_info "Starting Queen Bee in window 0..."
     local queen_init="cd $PROJECT_ROOT/workspaces/queen
 claude --dangerously-skip-permissions"
-    send_keys_cli "$SESSION_NAME" "$SESSION_NAME:0" "$queen_init" "initialization" "queen_startup" "${BEEHIVE_DRY_RUN:-false}"
+    send_keys_cli "$SESSION_NAME" "0" "$queen_init" "initialization" "queen_startup" "${BEEHIVE_DRY_RUN:-false}"
     sleep 3
     
     log_info "Starting Developer Bee in window 1..."
     local dev_init="cd $PROJECT_ROOT/workspaces/developer  
 claude --dangerously-skip-permissions"
-    send_keys_cli "$SESSION_NAME" "$SESSION_NAME:1" "$dev_init" "initialization" "developer_startup" "${BEEHIVE_DRY_RUN:-false}"
+    send_keys_cli "$SESSION_NAME" "1" "$dev_init" "initialization" "developer_startup" "${BEEHIVE_DRY_RUN:-false}"
     sleep 3
     
     log_info "Starting QA Bee in window 2..."
     local qa_init="cd $PROJECT_ROOT/workspaces/qa
 claude --dangerously-skip-permissions"
-    send_keys_cli "$SESSION_NAME" "$SESSION_NAME:2" "$qa_init" "initialization" "qa_startup" "${BEEHIVE_DRY_RUN:-false}"
+    send_keys_cli "$SESSION_NAME" "2" "$qa_init" "initialization" "qa_startup" "${BEEHIVE_DRY_RUN:-false}"
     sleep 3
     
     log_success "All Claude CLI instances started successfully"
@@ -177,9 +177,10 @@ verify_startup() {
     log_info "Next steps:"
     log_info "  1. Run ./beehive.sh attach to connect to session"
     log_info "  2. Switch between bee windows using:"
-    log_info "     • Ctrl-b + q/d/a (Queen/Developer/QA)"
+    log_info "     • Ctrl-b + q/w/e (Queen/Worker/Examiner)"
     log_info "     • Ctrl-b + ←/→ (Previous/Next window)"
     log_info "     • Ctrl-b + 0/1/2 (Direct window selection)"
+    log_info "     • Ctrl-b + d (Detach from session)"
     log_info "  3. Check each window to verify role understanding"
     log_info "  4. Use './beehive.sh start-task \"task\"' to begin work"
     

@@ -25,18 +25,26 @@ send_keys_cli() {
         return 1
     fi
     
-    # CLI実行
-    local cmd="cd $PROJECT_ROOT && python -m bees.cli send '$session_name' '$target_pane' '$message' --type '$message_type' --sender '$sender'"
     
+    # CLI実行 - 一時ファイルを使用して長いメッセージを安全に処理
+    local temp_file=$(mktemp)
+    echo "$message" > "$temp_file"
+    
+    # CLIに一時ファイルから読み込ませる
+    cd "$PROJECT_ROOT"
     if [[ "$dry_run" == "true" ]]; then
-        cmd+=" --dry-run"
+        python -m bees.cli send "$session_name" "$target_pane" "$(cat "$temp_file")" --type "$message_type" --sender "$sender" --dry-run
+    else
+        python -m bees.cli send "$session_name" "$target_pane" "$(cat "$temp_file")" --type "$message_type" --sender "$sender"
     fi
     
-    if eval "$cmd"; then
+    if [[ $? -eq 0 ]]; then
         echo "✅ Message sent to $session_name:$target_pane"
+        rm -f "$temp_file"
         return 0
     else
         echo "❌ Failed to send message"
+        rm -f "$temp_file"
         return 1
     fi
 }
