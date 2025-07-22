@@ -8,48 +8,6 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "Asia/Tokyo"
-    open-pull-requests-limit: 5
-    reviewers:
-      - "nyasuto"
-    assignees:
-      - "nyasuto"
-    labels:
-      - "dependencies"
-      - "python"
-    commit-message:
-      prefix: "deps"
-      include: "scope"
-    # Allow both security and version updates
-    allow:
-      - dependency-type: "all"
-    # Group related updates
-    groups:
-      dev-dependencies:
-        patterns:
-          - "pytest*"
-          - "coverage*"
-          - "*test*"
-          - "mypy*"
-        update-types:
-          - "minor"
-          - "patch"
-      security-dependencies:
-        patterns:
-          - "bandit*"
-          - "safety*"
-          - "pip-audit*"
-        update-types:
-          - "minor"
-          - "patch"
-      quality-dependencies:
-        patterns:
-          - "ruff*"
-          - "black*"
-          - "isort*"
-          - "pre-commit*"
-        update-types:
-          - "minor"
-          - "patch"
 
   # GitHub Actions
   - package-ecosystem: "github-actions"
@@ -59,14 +17,3 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "Asia/Tokyo"
-    open-pull-requests-limit: 3
-    reviewers:
-      - "nyasuto"
-    assignees:
-      - "nyasuto"
-    labels:
-      - "dependencies"
-      - "github-actions"
-    commit-message:
-      prefix: "ci"
-      include: "scope"
