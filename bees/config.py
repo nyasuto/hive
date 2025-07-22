@@ -58,6 +58,11 @@ class BeehiveConfig:
     concurrent_tasks_limit: int = 5
     memory_cleanup_interval: int = 1800  # seconds
 
+    # Queen Bee設定
+    available_bees: list[str] = field(default_factory=lambda: ["developer", "qa"])
+    task_assignment_strategy: str = "balanced"  # balanced, priority, workload
+    max_tasks_per_bee: int = 3
+
     # 品質・監視設定
     quality_gate_coverage_min: float = 85.0
     performance_benchmark_enabled: bool = True
@@ -83,6 +88,7 @@ class BeehiveConfig:
             ("hive_db_path", self.hive_db_path, self._validate_db_path),
             ("session_name", self.session_name, self._validate_session_name),
             ("heartbeat_interval", self.heartbeat_interval, self._validate_positive_float),
+            ("db_timeout", self.db_timeout, self._validate_positive_float),
             ("message_timeout", self.message_timeout, self._validate_positive_int),
             ("max_retries", self.max_retries, self._validate_positive_int),
             ("log_level", self.log_level, self._validate_log_level),
@@ -297,6 +303,15 @@ class BeehiveConfig:
     def is_development_mode(self) -> bool:
         """開発モードかどうかを判定"""
         return self.debug_mode or self.verbose_logging
+
+    def to_dict(self) -> dict[str, Any]:
+        """設定を辞書形式で取得"""
+        return {key: value for key, value in self.__dict__.items() if not key.startswith("_")}
+
+    @classmethod
+    def from_dict(cls, config_dict: dict[str, Any]) -> "BeehiveConfig":
+        """辞書から設定オブジェクトを作成"""
+        return cls(**config_dict)
 
     def __str__(self) -> str:
         """設定内容を文字列で表現（機密情報は隠す）"""

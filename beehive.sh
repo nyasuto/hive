@@ -177,7 +177,7 @@ cmd_start_task() {
 詳細確認: \`./scripts/task_manager.sh details $task_id\`
 このタスクを分析し、必要に応じて適切に分担してください。"
 
-        assign_task "$SESSION_NAME" "0.0" "$task_message" "system" "${BEEHIVE_DRY_RUN:-false}"
+        assign_task "$SESSION_NAME" "0" "$task_message" "system" "${BEEHIVE_DRY_RUN:-false}"
         
         log_success "タスク投入完了 (ID: $task_id)"
         log_info "タスク詳細: './scripts/task_manager.sh details $task_id'"
@@ -321,13 +321,13 @@ cmd_remind() {
         
         case "$target_bee" in
             "queen"|"0")
-                inject_role "$SESSION_NAME" "0.0" "🔔 [ROLE REMINDER] あなたはQueen Beeです。タスクの計画・分解・指示を担当してください。" "${BEEHIVE_DRY_RUN:-false}"
+                inject_role "$SESSION_NAME" "0" "🔔 [ROLE REMINDER] あなたはQueen Beeです。タスクの計画・分解・指示を担当してください。" "${BEEHIVE_DRY_RUN:-false}"
                 ;;
             "developer"|"dev"|"1")
-                inject_role "$SESSION_NAME" "0.1" "🔔 [ROLE REMINDER] あなたはDeveloper Beeです。コードの実装を担当してください。" "${BEEHIVE_DRY_RUN:-false}"
+                inject_role "$SESSION_NAME" "1" "🔔 [ROLE REMINDER] あなたはDeveloper Beeです。コードの実装を担当してください。" "${BEEHIVE_DRY_RUN:-false}"
                 ;;
             "qa"|"2")
-                inject_role "$SESSION_NAME" "0.2" "🔔 [ROLE REMINDER] あなたはQA Beeです。テストと品質保証を担当してください。" "${BEEHIVE_DRY_RUN:-false}"
+                inject_role "$SESSION_NAME" "2" "🔔 [ROLE REMINDER] あなたはQA Beeです。テストと品質保証を担当してください。" "${BEEHIVE_DRY_RUN:-false}"
                 ;;
         esac
         log_success "$target_bee にリマインダーを送信しました"
