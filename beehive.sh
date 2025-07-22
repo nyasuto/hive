@@ -236,28 +236,35 @@ cmd_logs() {
     
     case "$bee" in
         "queen"|"0")
-            log_info "Queen Bee ログ（ペイン0）:"
-            tmux capture-pane -t "$SESSION_NAME:0.0" -p
+            log_info "Queen Bee ログ（ウィンドウ0）:"
+            tmux capture-pane -t "$SESSION_NAME:0" -p
             ;;
         "developer"|"dev"|"1")
-            log_info "Developer Bee ログ（ペイン1）:"
-            tmux capture-pane -t "$SESSION_NAME:0.1" -p
+            log_info "Developer Bee ログ（ウィンドウ1）:"
+            tmux capture-pane -t "$SESSION_NAME:1" -p
             ;;
         "qa"|"2")
-            log_info "QA Bee ログ（ペイン2）:"
-            tmux capture-pane -t "$SESSION_NAME:0.2" -p
+            log_info "QA Bee ログ（ウィンドウ2）:"
+            tmux capture-pane -t "$SESSION_NAME:2" -p
+            ;;
+        "analyst"|"3")
+            log_info "Analyst Bee ログ（ウィンドウ3）:"
+            tmux capture-pane -t "$SESSION_NAME:3" -p
             ;;
         "all"|*)
             log_info "=== 全Bee ログ ==="
             echo
-            echo "🐝 Queen Bee (ペイン0):"
-            tmux capture-pane -t "$SESSION_NAME:0.0" -p | tail -10
+            echo "🐝 Queen Bee (ウィンドウ0):"
+            tmux capture-pane -t "$SESSION_NAME:0" -p | tail -10
             echo
-            echo "💻 Developer Bee (ペイン1):"
-            tmux capture-pane -t "$SESSION_NAME:0.1" -p | tail -10
+            echo "💻 Developer Bee (ウィンドウ1):"
+            tmux capture-pane -t "$SESSION_NAME:1" -p | tail -10
             echo
-            echo "🔍 QA Bee (ペイン2):"
-            tmux capture-pane -t "$SESSION_NAME:0.2" -p | tail -10
+            echo "🔍 QA Bee (ウィンドウ2):"
+            tmux capture-pane -t "$SESSION_NAME:2" -p | tail -10
+            echo
+            echo "📊 Analyst Bee (ウィンドウ3):"
+            tmux capture-pane -t "$SESSION_NAME:3" -p | tail -10
             ;;
     esac
 }
@@ -309,6 +316,9 @@ cmd_remind() {
             "qa"|"2")
                 inject_role "$SESSION_NAME" "2" "🔔 [ROLE REMINDER] あなたはQA Beeです。テストと品質保証を担当してください。" "${BEEHIVE_DRY_RUN:-false}"
                 ;;
+            "analyst"|"3")
+                inject_role "$SESSION_NAME" "3" "🔔 [ROLE REMINDER] あなたはAnalyst Beeです。パフォーマンス分析・品質評価・レポート作成を担当してください。" "${BEEHIVE_DRY_RUN:-false}"
+                ;;
         esac
         log_success "$target_bee にリマインダーを送信しました"
     else
@@ -316,6 +326,7 @@ cmd_remind() {
         cmd_remind --bee queen
         cmd_remind --bee developer
         cmd_remind --bee qa
+        cmd_remind --bee analyst
         log_success "全Beeにリマインダーを送信しました"
     fi
 }
