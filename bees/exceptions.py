@@ -32,6 +32,21 @@ class BeehiveError(Exception):
             return f"[{self.error_code}] {base_msg}"
         return base_msg
 
+    def to_dict(self) -> dict[str, Any]:
+        """Convert exception to dictionary representation"""
+        return {
+            "error_type": self.__class__.__name__,
+            "message": str(self),
+            "error_code": self.error_code,
+            "metadata": self.metadata,
+        }
+
+    def to_json(self) -> str:
+        """Convert exception to JSON representation"""
+        import json
+
+        return json.dumps(self.to_dict())
+
 
 class DatabaseError(BeehiveError):
     """データベース関連エラーの基底クラス"""
@@ -292,7 +307,43 @@ class WorkflowStateError(WorkflowError):
         self.reason = reason
 
 
-# 便利なユーティリティ関数
+# 便利なユーティリティ関数とデコレータ
+def error_handler(func):
+    """
+    汎用エラーハンドリングデコレータ
+
+    BeehiveErrorは再発生、その他の例外はBeehiveErrorでラップ
+
+    Usage:
+        @error_handler
+        def some_operation(self):
+            # 何らかの処理
+            pass
+    """
+    import functools
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except BeehiveError:
+            # BeehiveError系はそのまま再発生
+            raise
+        except Exception as e:
+            # その他の例外はBeehiveErrorでラップ
+            raise BeehiveError(
+                message=f"Unexpected error in {func.__name__}: {e}",
+                error_code="UNEXPECTED_ERROR",
+                metadata={
+                    "function": func.__name__,
+                    "original_error_type": e.__class__.__name__,
+                    "original_error_message": str(e),
+                },
+            ) from e
+
+    return wrapper
+
+
 def wrap_database_error(func):
     """
     データベース操作をラップしてカスタム例外に変換するデコレータ
@@ -303,15 +354,20 @@ def wrap_database_error(func):
             # データベース操作
             pass
     """
+    import functools
+    import sqlite3
 
+    @functools.wraps(func)
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
-        except Exception as e:
-            if "database" in str(e).lower() or "sql" in str(e).lower():
-                raise DatabaseOperationError(
-                    operation=func.__name__, query="Unknown", original_error=e
-                )
+        except sqlite3.Error as e:
+            # SQLite例外はDatabaseOperationErrorに変換
+            raise DatabaseOperationError(
+                operation=func.__name__, query="Unknown", original_error=e
+            ) from e
+        except Exception:
+            # その他の例外はそのまま再発生
             raise
 
     return wrapper

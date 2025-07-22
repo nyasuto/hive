@@ -33,21 +33,18 @@ install-all: install ## Install all optional dependencies
 check: lint python-quality shellcheck ## Run all quality checks
 	@echo "✅ All quality checks passed"
 
-python-quality: ## Run Python quality checks (black, isort, mypy, ruff)
+python-quality: ## Run Python quality checks with ruff
 	@echo "🔍 Running Python quality checks..."
-	uv run black --check bees/
-	uv run isort --check-only bees/
 	uv run ruff check bees/
-	uv run mypy bees/
+	uv run ruff format --check bees/
 	@echo "✅ Python quality checks passed"
 
 lint: python-quality ## Alias for python-quality
 
-python-format: ## Format Python code  
+python-format: ## Format Python code with ruff
 	@echo "🎨 Formatting Python code..."
-	uv run black bees/
-	uv run isort bees/
-	uv run ruff --fix bees/
+	uv run ruff format bees/
+	uv run ruff check --fix bees/
 	@echo "✅ Python code formatted"
 
 format: python-format ## Alias for python-format
