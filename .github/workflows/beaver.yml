@@ -4,7 +4,7 @@ on:
   push:
 
 jobs:
-  build:
+  documentation:
 
     runs-on: ubuntu-latest
 
@@ -13,6 +13,6 @@ jobs:
       uses: nyasuto/beaver@v1
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
-        codecov-token: ${{ secrets.CODECOV_API_TOKEN }}  # オプション
-        enable-quality-dashboard: true
+        #codecov-token: ${{ secrets.CODECOV_API_TOKEN }}  # オプション
+        #enable-quality-dashboard: true
         deploy-to-pages: true
