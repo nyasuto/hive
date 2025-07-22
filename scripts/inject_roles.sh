@@ -57,7 +57,7 @@ inject_role_to_pane() {
     fi
     
     # Clear the pane first using CLI
-    send_keys_cli "$SESSION_NAME" "$pane_id" "clear" "command" "system"
+    send_keys_cli "$SESSION_NAME" "$pane_id" "clear" "command" "system" "${BEEHIVE_DRY_RUN:-false}"
     sleep 1
     
     # Read role content and prepare injection message
@@ -72,7 +72,7 @@ inject_role_to_pane() {
     
     # Send role injection via CLI with proper metadata
     log_info "Injecting role via send-keys CLI..."
-    inject_role "$SESSION_NAME" "$pane_id" "$role_content" "$role_name"
+    inject_role "$SESSION_NAME" "$pane_id" "$role_content" "${BEEHIVE_DRY_RUN:-false}"
     
     log_success "$role_name role injected successfully via CLI"
     return 0
@@ -86,21 +86,21 @@ inject_all_roles() {
     local total_roles=3
     
     # Inject Queen Bee role (window 0)
-    if inject_role_to_pane "$SESSION_NAME:0" "$PROJECT_ROOT/roles/queen.md" "Queen Bee"; then
+    if inject_role_to_pane "0" "$PROJECT_ROOT/roles/queen.md" "Queen Bee"; then
         ((success_count++))
     fi
     
     sleep 2
     
     # Inject Developer Bee role (window 1) 
-    if inject_role_to_pane "$SESSION_NAME:1" "$PROJECT_ROOT/roles/developer.md" "Developer Bee"; then
+    if inject_role_to_pane "1" "$PROJECT_ROOT/roles/developer.md" "Developer Bee"; then
         ((success_count++))
     fi
     
     sleep 2
     
     # Inject QA Bee role (window 2)
-    if inject_role_to_pane "$SESSION_NAME:2" "$PROJECT_ROOT/roles/qa.md" "QA Bee"; then
+    if inject_role_to_pane "2" "$PROJECT_ROOT/roles/qa.md" "QA Bee"; then
         ((success_count++))
     fi
     
@@ -127,13 +127,13 @@ inject_specific_role() {
     
     case "$role_name" in
         "queen"|"0")
-            inject_role_to_pane "$SESSION_NAME:0" "$PROJECT_ROOT/roles/queen.md" "Queen Bee"
+            inject_role_to_pane "0" "$PROJECT_ROOT/roles/queen.md" "Queen Bee"
             ;;
         "developer"|"dev"|"1")
-            inject_role_to_pane "$SESSION_NAME:1" "$PROJECT_ROOT/roles/developer.md" "Developer Bee"
+            inject_role_to_pane "1" "$PROJECT_ROOT/roles/developer.md" "Developer Bee"
             ;;
         "qa"|"2")
-            inject_role_to_pane "$SESSION_NAME:2" "$PROJECT_ROOT/roles/qa.md" "QA Bee"
+            inject_role_to_pane "2" "$PROJECT_ROOT/roles/qa.md" "QA Bee"
             ;;
         *)
             log_error "Unknown role: $role_name"
@@ -150,7 +150,7 @@ verify_roles() {
     # Check if panes are responsive using CLI
     local responsive_panes=0
     
-    for window_id in "$SESSION_NAME:0" "$SESSION_NAME:1" "$SESSION_NAME:2"; do
+    for window_id in "0" "1" "2"; do
         log_info "Testing window $window_id responsiveness..."
         
         # Send a simple test question via CLI
@@ -159,7 +159,7 @@ verify_roles() {
         send_keys_cli "$SESSION_NAME" "$window_id" "現在の時刻を教えてください" "verification" "system"
         
         # Check if window exists and is active using tmux
-        if tmux list-windows -t "$SESSION_NAME" | grep -q "${window_id##*:}:"; then
+        if tmux list-windows -t "$SESSION_NAME" | grep -q "${window_id}:"; then
             ((responsive_panes++))
             log_info "Window $window_id is active"
         else
