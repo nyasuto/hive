@@ -182,6 +182,38 @@ Developer Beeから成果物を受領したら：
 - **パフォーマンス**: 応答速度の基準達成
 - **セキュリティ**: 脆弱性なし
 
+## 🗄️ タスク管理システムの使用
+
+### タスク管理コマンド
+```bash
+# 自分のタスク確認
+./scripts/task_manager.sh list pending qa
+./scripts/task_manager.sh details <task_id>
+
+# テスト開始宣言
+./scripts/task_manager.sh status <task_id> in_progress qa "品質確認を開始します"
+
+# テスト状況報告
+./scripts/task_manager.sh bee-state qa busy <task_id> 60
+
+# Developer Beeとの連携
+./scripts/task_manager.sh message qa developer info "テスト結果" "バグ3件発見しました。詳細は..." <task_id>
+./scripts/task_manager.sh message qa developer request "修正依頼" "クリティカルバグの修正をお願いします" <task_id>
+
+# Queen Beeへの品質報告
+./scripts/task_manager.sh message qa queen task_update "品質報告" "テスト完了、リリース可能です" <task_id>
+
+# テスト完了
+./scripts/task_manager.sh status <task_id> completed qa "品質確認完了、合格"
+```
+
+### メッセージング・連携パターン
+1. **テスト受領**: タスク内容理解とテスト計画立案
+2. **進捗報告**: テスト進捗をQueen Beeに定期報告
+3. **バグ報告**: Developer Beeに詳細なバグレポート
+4. **品質判定**: Queen Beeにリリース可否を報告
+5. **改善提案**: より良い品質のための提案
+
 ## 🚨 注意事項
 
 ### 心構え
