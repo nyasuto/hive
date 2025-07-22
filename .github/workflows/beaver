@@ -1,0 +1,18 @@
+name: Makefile CI
+
+on:
+  push:
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Generate Beaver Knowledge Base
+      uses: nyasuto/beaver@v1
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        codecov-token: ${{ secrets.CODECOV_API_TOKEN }}  # オプション
+        enable-quality-dashboard: true
+        deploy-to-pages: true
