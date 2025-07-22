@@ -85,22 +85,22 @@ inject_all_roles() {
     local success_count=0
     local total_roles=3
     
-    # Inject Queen Bee role (%0)
-    if inject_role_to_pane "%0" "$PROJECT_ROOT/roles/queen.md" "Queen Bee"; then
+    # Inject Queen Bee role (window 0)
+    if inject_role_to_pane "$SESSION_NAME:0" "$PROJECT_ROOT/roles/queen.md" "Queen Bee"; then
         ((success_count++))
     fi
     
     sleep 2
     
-    # Inject Developer Bee role (%1) 
-    if inject_role_to_pane "%1" "$PROJECT_ROOT/roles/developer.md" "Developer Bee"; then
+    # Inject Developer Bee role (window 1) 
+    if inject_role_to_pane "$SESSION_NAME:1" "$PROJECT_ROOT/roles/developer.md" "Developer Bee"; then
         ((success_count++))
     fi
     
     sleep 2
     
-    # Inject QA Bee role (%2)
-    if inject_role_to_pane "%2" "$PROJECT_ROOT/roles/qa.md" "QA Bee"; then
+    # Inject QA Bee role (window 2)
+    if inject_role_to_pane "$SESSION_NAME:2" "$PROJECT_ROOT/roles/qa.md" "QA Bee"; then
         ((success_count++))
     fi
     
@@ -127,13 +127,13 @@ inject_specific_role() {
     
     case "$role_name" in
         "queen"|"0")
-            inject_role_to_pane "%0" "$PROJECT_ROOT/roles/queen.md" "Queen Bee"
+            inject_role_to_pane "$SESSION_NAME:0" "$PROJECT_ROOT/roles/queen.md" "Queen Bee"
             ;;
         "developer"|"dev"|"1")
-            inject_role_to_pane "%1" "$PROJECT_ROOT/roles/developer.md" "Developer Bee"
+            inject_role_to_pane "$SESSION_NAME:1" "$PROJECT_ROOT/roles/developer.md" "Developer Bee"
             ;;
         "qa"|"2")
-            inject_role_to_pane "%2" "$PROJECT_ROOT/roles/qa.md" "QA Bee"
+            inject_role_to_pane "$SESSION_NAME:2" "$PROJECT_ROOT/roles/qa.md" "QA Bee"
             ;;
         *)
             log_error "Unknown role: $role_name"
@@ -150,30 +150,30 @@ verify_roles() {
     # Check if panes are responsive using CLI
     local responsive_panes=0
     
-    for pane_id in "%0" "%1" "%2"; do
-        log_info "Testing pane $pane_id responsiveness..."
+    for window_id in "$SESSION_NAME:0" "$SESSION_NAME:1" "$SESSION_NAME:2"; do
+        log_info "Testing window $window_id responsiveness..."
         
         # Send a simple test question via CLI
-        send_keys_cli "$SESSION_NAME" "$pane_id" "" "heartbeat" "system"
+        send_keys_cli "$SESSION_NAME" "$window_id" "" "heartbeat" "system"
         sleep 0.5
-        send_keys_cli "$SESSION_NAME" "$pane_id" "現在の時刻を教えてください" "verification" "system"
+        send_keys_cli "$SESSION_NAME" "$window_id" "現在の時刻を教えてください" "verification" "system"
         
-        # Check if pane exists and is active using tmux
-        if tmux list-panes -t "$SESSION_NAME:0" | grep -q "$pane_id"; then
+        # Check if window exists and is active using tmux
+        if tmux list-windows -t "$SESSION_NAME" | grep -q "${window_id##*:}:"; then
             ((responsive_panes++))
-            log_info "Pane $pane_id is active"
+            log_info "Window $window_id is active"
         else
-            log_warning "Pane $pane_id may not be active"
+            log_warning "Window $window_id may not be active"
         fi
     done
     
-    log_info "Active panes: $responsive_panes/3"
+    log_info "Active windows: $responsive_panes/3"
     
     if [[ $responsive_panes -eq 3 ]]; then
-        log_success "All panes are responsive - verification via CLI complete"
+        log_success "All windows are responsive - verification via CLI complete"
         return 0
     else
-        log_warning "Some panes may not be responsive"
+        log_warning "Some windows may not be responsive"
         return 1
     fi
 }
@@ -192,9 +192,9 @@ OPTIONS:
     --help, -h          Show this help
 
 ROLES:
-    queen, 0           Inject Queen Bee role (pane 0)
-    developer, dev, 1  Inject Developer Bee role (pane 1)  
-    qa, 2              Inject QA Bee role (pane 2)
+    queen, 0           Inject Queen Bee role (window 0)
+    developer, dev, 1  Inject Developer Bee role (window 1)  
+    qa, 2              Inject QA Bee role (window 2)
 
 EXAMPLES:
     ./scripts/inject_roles.sh                    # Inject all roles via CLI
@@ -212,7 +212,7 @@ FEATURES:
 REQUIREMENTS:
     - Beehive session must be running (./beehive.sh init)
     - Role definition files must exist in roles/ directory
-    - Claude agents must be responsive in each pane
+    - Claude agents must be responsive in each window
     - send-keys CLI must be available (python -m bees.cli)
 
 EOF
