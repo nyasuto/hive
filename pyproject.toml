@@ -238,9 +238,9 @@ ignore = [
 
 # Bandit設定（セキュリティ）
 [tool.bandit]
-exclude_dirs = ["tests", "htmlcov", ".venv"]
-tests = ["B201", "B301"]
-skips = ["B101", "B601"]
+exclude_dirs = ["tests", "htmlcov", ".venv", ".pytest_cache"]
+# Skip test assertions and subprocess usage in development tools
+skips = ["B101", "B601", "B602", "B603", "B604", "B605", "B607"]
 
 # Hatch環境設定
 [tool.hatch.envs.default]
