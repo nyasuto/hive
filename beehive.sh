@@ -44,6 +44,7 @@ COMMANDS:
     attach               tmuxセッションに接続
     remind [--bee bee]   コンテキストリマインダーを手動送信
     daemon <command>     リマインダーデーモン管理（daemon help で詳細）
+    web <command>        Webダッシュボード管理（web help で詳細）
     stop                 Beehiveを停止
     help                 このヘルプを表示
 
@@ -56,6 +57,8 @@ EXAMPLES:
     ./beehive.sh status
     ./beehive.sh logs queen
     ./beehive.sh attach
+    ./beehive.sh web start
+    ./beehive.sh web status
     ./beehive.sh stop
 
 NOTES:
@@ -347,6 +350,206 @@ cmd_task() {
     "$SCRIPT_DIR/scripts/task_manager.sh" "$@"
 }
 
+# web コマンド - Webダッシュボード管理
+cmd_web() {
+    local web_command="${1:-help}"
+    
+    case "$web_command" in
+        "start")
+            cmd_web_start
+            ;;
+        "stop")
+            cmd_web_stop
+            ;;
+        "status")
+            cmd_web_status
+            ;;
+        "logs")
+            cmd_web_logs
+            ;;
+        "help"|*)
+            cmd_web_help
+            ;;
+    esac
+}
+
+# Webダッシュボード開始
+cmd_web_start() {
+    log_info "=== Webダッシュボード開始 ==="
+    
+    # バックエンド開始
+    log_info "バックエンドサーバーを開始中..."
+    cd "$SCRIPT_DIR/web/backend"
+    
+    if [ ! -f "pyproject.toml" ]; then
+        log_error "バックエンド設定ファイルが見つかりません"
+        return 1
+    fi
+    
+    # バックグラウンドでバックエンド起動
+    nohup uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload > "$SCRIPT_DIR/logs/web-backend.log" 2>&1 &
+    echo $! > "$SCRIPT_DIR/logs/web-backend.pid"
+    
+    sleep 2
+    
+    # フロントエンド開始
+    log_info "フロントエンドサーバーを開始中..."
+    cd "$SCRIPT_DIR/web/frontend"
+    
+    if [ ! -f "package.json" ]; then
+        log_error "フロントエンド設定ファイルが見つかりません"
+        return 1
+    fi
+    
+    # フロントエンド依存関係インストール（初回のみ）
+    if [ ! -d "node_modules" ]; then
+        log_info "依存関係をインストール中..."
+        npm install
+    fi
+    
+    # バックグラウンドでフロントエンド起動
+    nohup npm run start > "$SCRIPT_DIR/logs/web-frontend.log" 2>&1 &
+    echo $! > "$SCRIPT_DIR/logs/web-frontend.pid"
+    
+    log_success "Webダッシュボード開始完了"
+    log_info "アクセス先: http://localhost:3000"
+    log_info "API: http://localhost:8000"
+    log_info "停止するには: ./beehive.sh web stop"
+}
+
+# Webダッシュボード停止
+cmd_web_stop() {
+    log_info "Webダッシュボードを停止中..."
+    
+    # バックエンド停止
+    if [ -f "$SCRIPT_DIR/logs/web-backend.pid" ]; then
+        local backend_pid
+        backend_pid=$(cat "$SCRIPT_DIR/logs/web-backend.pid")
+        if kill -0 "$backend_pid" 2>/dev/null; then
+            kill "$backend_pid"
+            log_info "バックエンドサーバーを停止しました"
+        fi
+        rm -f "$SCRIPT_DIR/logs/web-backend.pid"
+    fi
+    
+    # フロントエンド停止
+    if [ -f "$SCRIPT_DIR/logs/web-frontend.pid" ]; then
+        local frontend_pid
+        frontend_pid=$(cat "$SCRIPT_DIR/logs/web-frontend.pid")
+        if kill -0 "$frontend_pid" 2>/dev/null; then
+            kill "$frontend_pid"
+            log_info "フロントエンドサーバーを停止しました"
+        fi
+        rm -f "$SCRIPT_DIR/logs/web-frontend.pid"
+    fi
+    
+    log_success "Webダッシュボード停止完了"
+}
+
+# Webダッシュボード状態確認
+cmd_web_status() {
+    log_info "=== Webダッシュボード状態 ==="
+    
+    local backend_running=false
+    local frontend_running=false
+    
+    # バックエンド状態
+    if [ -f "$SCRIPT_DIR/logs/web-backend.pid" ]; then
+        local backend_pid
+        backend_pid=$(cat "$SCRIPT_DIR/logs/web-backend.pid")
+        if kill -0 "$backend_pid" 2>/dev/null; then
+            echo "🟢 バックエンド: 実行中 (PID: $backend_pid, ポート: 8000)"
+            backend_running=true
+        else
+            echo "🔴 バックエンド: 停止中"
+            rm -f "$SCRIPT_DIR/logs/web-backend.pid"
+        fi
+    else
+        echo "🔴 バックエンド: 停止中"
+    fi
+    
+    # フロントエンド状態
+    if [ -f "$SCRIPT_DIR/logs/web-frontend.pid" ]; then
+        local frontend_pid
+        frontend_pid=$(cat "$SCRIPT_DIR/logs/web-frontend.pid")
+        if kill -0 "$frontend_pid" 2>/dev/null; then
+            echo "🟢 フロントエンド: 実行中 (PID: $frontend_pid, ポート: 3000)"
+            frontend_running=true
+        else
+            echo "🔴 フロントエンド: 停止中"
+            rm -f "$SCRIPT_DIR/logs/web-frontend.pid"
+        fi
+    else
+        echo "🔴 フロントエンド: 停止中"
+    fi
+    
+    echo
+    if [ "$backend_running" = true ] && [ "$frontend_running" = true ]; then
+        echo "✅ Webダッシュボードは正常に動作中です"
+        echo "   アクセス先: http://localhost:3000"
+    elif [ "$backend_running" = true ] || [ "$frontend_running" = true ]; then
+        echo "⚠️  Webダッシュボードは部分的に動作中です"
+    else
+        echo "❌ Webダッシュボードは停止中です"
+        echo "   開始するには: ./beehive.sh web start"
+    fi
+}
+
+# Webダッシュボードログ表示
+cmd_web_logs() {
+    log_info "=== Webダッシュボードログ ==="
+    
+    echo
+    echo "🔧 バックエンドログ:"
+    if [ -f "$SCRIPT_DIR/logs/web-backend.log" ]; then
+        tail -20 "$SCRIPT_DIR/logs/web-backend.log"
+    else
+        echo "ログファイルが見つかりません"
+    fi
+    
+    echo
+    echo "🌐 フロントエンドログ:"
+    if [ -f "$SCRIPT_DIR/logs/web-frontend.log" ]; then
+        tail -20 "$SCRIPT_DIR/logs/web-frontend.log"
+    else
+        echo "ログファイルが見つかりません"
+    fi
+}
+
+# Webダッシュボードヘルプ
+cmd_web_help() {
+    cat << 'EOF'
+🌐 Webダッシュボード管理コマンド
+
+USAGE:
+    ./beehive.sh web <command>
+
+COMMANDS:
+    start     Webダッシュボードを開始（バックエンド + フロントエンド）
+    stop      Webダッシュボードを停止
+    status    Webダッシュボードの状態を確認
+    logs      Webダッシュボードのログを表示
+    help      このヘルプを表示
+
+EXAMPLES:
+    ./beehive.sh web start    # ダッシュボード開始
+    ./beehive.sh web status   # 状態確認
+    ./beehive.sh web logs     # ログ確認
+    ./beehive.sh web stop     # ダッシュボード停止
+
+PORTS:
+    フロントエンド: http://localhost:3000
+    バックエンドAPI: http://localhost:8000
+    WebSocket: ws://localhost:8000/ws/
+
+NOTES:
+    - BeehiveシステムがinitされてからWebダッシュボードを起動してください
+    - フロントエンドは初回起動時に依存関係を自動インストールします
+    - ログファイルは logs/ ディレクトリに保存されます
+
+EOF
+}
+
 # stop コマンド - 停止
 cmd_stop() {
     if ! tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
@@ -406,6 +609,10 @@ main() {
         "daemon")
             shift
             cmd_daemon "$@"
+            ;;
+        "web")
+            shift
+            cmd_web "$@"
             ;;
         "stop")
             cmd_stop
