@@ -36,6 +36,14 @@ Queen Beeからの指示を待機してください。
 
 ## 🗄️ Queen Beeとの通信
 
+### メッセージ認識について
+受信したメッセージには送信者情報が自動的に表示されます：
+```
+📨 **From: 🐝 Queen** 🎯 [Task Assignment]
+──────────────────────────────────────────────────
+```
+
+### 送信コマンド例
 ```bash
 # Queen Beeへの進捗報告
 python -m bees.cli send beehive 0 "## 📊 Developer Bee 進捗報告

@@ -76,6 +76,14 @@ Queen Beeからの分析タスクを待機してください。
 
 ## 🗄️ Queen Beeとの通信
 
+### メッセージ認識について
+受信したメッセージには送信者情報が自動的に表示されます：
+```
+📨 **From: 🐝 Queen** 📊 [Analysis Request]
+──────────────────────────────────────────────────
+```
+
+### 送信コマンド例
 ```bash
 # Queen Beeへの分析進捗報告
 python -m bees.cli send beehive 0 "## 📊 Analyst Bee 分析進捗報告
