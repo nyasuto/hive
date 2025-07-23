@@ -7,8 +7,8 @@ from datetime import datetime
 from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
 
-from ..models.schemas import TaskListResponse, TaskCreateRequest, TaskResponse
-from ..database.connection import get_db_manager
+from models.schemas import TaskListResponse, TaskCreateRequest, TaskResponse
+from database.connection import get_db_manager
 
 router = APIRouter()
 
@@ -72,7 +72,7 @@ async def get_task(task_id: str):
                 raise HTTPException(status_code=404, detail=f"Task '{task_id}' not found")
             
             import json
-            from ..models.schemas import TaskStatus, Priority
+            from models.schemas import TaskStatus, Priority
             
             metadata = json.loads(row['metadata']) if row['metadata'] else {}
             

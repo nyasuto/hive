@@ -7,8 +7,8 @@ from datetime import datetime
 from fastapi import APIRouter, HTTPException
 from typing import List
 
-from ..models.schemas import AgentListResponse, AgentStatusResponse
-from ..database.connection import get_db_manager
+from models.schemas import AgentListResponse, AgentStatusResponse
+from database.connection import get_db_manager
 
 router = APIRouter()
 

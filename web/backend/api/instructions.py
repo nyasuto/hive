@@ -9,8 +9,8 @@ from datetime import datetime
 from pathlib import Path
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 
-from ..models.schemas import InstructionRequest, InstructionResponse
-from ..database.connection import get_db_manager
+from models.schemas import InstructionRequest, InstructionResponse
+from database.connection import get_db_manager
 
 router = APIRouter()
 

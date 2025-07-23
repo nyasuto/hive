@@ -12,7 +12,7 @@ from typing import Set, Dict, Any
 from fastapi import WebSocket, WebSocketDisconnect, FastAPI
 from fastapi.websockets import WebSocketState
 
-from ..database.connection import get_db_manager
+from database.connection import get_db_manager
 
 
 class WebSocketManager:

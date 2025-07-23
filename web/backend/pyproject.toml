@@ -6,7 +6,6 @@ build-backend = "hatchling.build"
 name = "beehive-web-backend"
 version = "1.0.0"
 description = "Web Dashboard Backend for Beehive Multi-Agent System"
-readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.104.1",
@@ -29,6 +28,9 @@ dev = [
 
 [project.scripts]
 beehive-web = "main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
 
 [tool.ruff]
 target-version = "py312"

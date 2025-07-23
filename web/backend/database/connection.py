@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
 from contextlib import contextmanager
 
-from ..models.schemas import (
+from models.schemas import (
     AgentStatusResponse, TaskResponse, MessageResponse,
     AgentType, AgentStatus, TaskStatus, Priority
 )

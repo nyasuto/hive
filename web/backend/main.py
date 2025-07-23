@@ -15,15 +15,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from .models.schemas import (
+from models.schemas import (
     AgentListResponse, TaskListResponse, MessageListResponse,
     InstructionRequest, InstructionResponse, TaskCreateRequest,
     SystemHealthResponse, ConversationStatsResponse, DashboardSummary,
     ErrorResponse
 )
-from .database.connection import get_db_manager
-from .api import agents, tasks, instructions
-from .websocket.manager import websocket_manager
+from database.connection import get_db_manager
+from api import agents, tasks, instructions
+from websocket.manager import websocket_manager
 
 
 # FastAPI app initialization

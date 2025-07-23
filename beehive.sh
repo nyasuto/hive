@@ -386,7 +386,7 @@ cmd_web_start() {
         return 1
     fi
     
-    # バックグラウンドでバックエンド起動
+    # バックグラウンドでバックエンド起動（uvを使用）
     nohup uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload > "$SCRIPT_DIR/logs/web-backend.log" 2>&1 &
     echo $! > "$SCRIPT_DIR/logs/web-backend.pid"
     
