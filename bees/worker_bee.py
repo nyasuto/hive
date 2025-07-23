@@ -35,7 +35,7 @@ class WorkerBee(BaseBee):
 
         # 専門分野の設定
         self.specialty = specialty
-        self.current_task_id: int | None = None
+        self.current_task_id: str | None = None
         self.work_session_start: datetime | None = None
 
         # 作業能力の定義
@@ -79,7 +79,7 @@ class WorkerBee(BaseBee):
         except Exception as e:
             raise DatabaseConnectionError(f"Failed to update capabilities: {e}") from e
 
-    def accept_task(self, task_id: int) -> bool:
+    def accept_task(self, task_id: str) -> bool:
         """タスクを受け入れて作業を開始"""
         task_details = self.get_task_details(task_id)
         if not task_details:
@@ -121,7 +121,7 @@ class WorkerBee(BaseBee):
 
     def complete_task(
         self,
-        task_id: int,
+        task_id: str,
         result: str,
         deliverables: list[str] | None = None,
         work_summary: str = "",
@@ -190,7 +190,7 @@ class WorkerBee(BaseBee):
 
     def report_progress(
         self,
-        task_id: int,
+        task_id: str,
         progress_percentage: int,
         status_note: str,
         blocking_issues: list[str] | None = None,
@@ -241,7 +241,7 @@ Time elapsed: {self._calculate_work_duration():.2f} hours
         return True
 
     def request_assistance(
-        self, task_id: int, assistance_type: str, details: str, urgent: bool = False
+        self, task_id: str, assistance_type: str, details: str, urgent: bool = False
     ) -> bool:
         """Queenまたは他のBeeに支援を要請"""
         task_details = self.get_task_details(task_id)
@@ -289,7 +289,7 @@ Please advise on how to proceed.
         duration = datetime.now() - self.work_session_start
         return duration.total_seconds() / 3600.0  # 時間に変換
 
-    def _get_current_progress(self, task_id: int) -> int:
+    def _get_current_progress(self, task_id: str) -> int:
         """現在のタスク進捗を取得（推定）"""
         # 簡易実装：作業時間から進捗を推定
         work_duration = self._calculate_work_duration()
@@ -394,7 +394,7 @@ Please advise on how to proceed.
 
         self.mark_message_processed(message["message_id"])
 
-    def simulate_work(self, task_id: int, work_steps: list[dict[str, Any]]) -> bool:
+    def simulate_work(self, task_id: str, work_steps: list[dict[str, Any]]) -> bool:
         """作業をシミュレート（デモ用）"""
         if not self.accept_task(task_id):
             return False
