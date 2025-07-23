@@ -57,7 +57,7 @@ class TestDatabaseHelper:
             subject TEXT,
             content TEXT NOT NULL,
             task_id TEXT REFERENCES tasks(task_id),
-            priority TEXT NOT NULL DEFAULT 'normal' CHECK (priority IN ('low', 'normal', 'high', 'urgent')),
+            priority TEXT NOT NULL DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'critical')),
             processed BOOLEAN NOT NULL DEFAULT FALSE,
             processed_at DATETIME,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -135,7 +135,7 @@ class TestDatabaseHelper:
                             message.get('subject'),
                             message.get('content'),
                             message.get('task_id'),
-                            message.get('priority', 'normal'),
+                            message.get('priority', 'medium'),
                             message.get('sender_cli_used', True),
                             message.get('conversation_id')
                         )

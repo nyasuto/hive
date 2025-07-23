@@ -129,7 +129,7 @@ class WebSocketManager:
                     {
                         "type": "agent_status",
                         "data": {
-                            "agents": [agent.model_dump() for agent in agents],
+                            "agents": [agent.model_dump(mode='json') for agent in agents],
                             "timestamp": datetime.now().isoformat(),
                         },
                     },
@@ -142,7 +142,7 @@ class WebSocketManager:
                     {
                         "type": "task_update",
                         "data": {
-                            "tasks": [task.model_dump() for task in tasks],
+                            "tasks": [task.model_dump(mode='json') for task in tasks],
                             "timestamp": datetime.now().isoformat(),
                         },
                     },
@@ -212,7 +212,7 @@ class WebSocketManager:
                         {
                             "type": "agent_status_update",
                             "data": {
-                                "agents": [agent.model_dump() for agent in agents],
+                                "agents": [agent.model_dump(mode='json') for agent in agents],
                                 "timestamp": current_time.isoformat(),
                             },
                         }
@@ -233,7 +233,7 @@ class WebSocketManager:
                             {
                                 "type": "task_update",
                                 "data": {
-                                    "tasks": [task.model_dump() for task in recent_tasks],
+                                    "tasks": [task.model_dump(mode='json') for task in recent_tasks],
                                     "timestamp": current_time.isoformat(),
                                 },
                             }

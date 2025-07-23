@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS bee_messages (
     subject TEXT,
     content TEXT NOT NULL,
     task_id TEXT REFERENCES tasks(task_id), -- optional task reference
-    priority TEXT NOT NULL DEFAULT 'normal' CHECK (priority IN ('low', 'normal', 'high', 'urgent')),
+    priority TEXT NOT NULL DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'critical')),
     processed BOOLEAN NOT NULL DEFAULT FALSE,
     processed_at DATETIME,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
