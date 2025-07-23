@@ -66,7 +66,7 @@ class AnalystBee(WorkerBee):
         ]
 
     @error_handler
-    def performance_analysis(self, target_path: str, task_id: int | None = None) -> dict[str, Any]:
+    def performance_analysis(self, target_path: str, task_id: str | None = None) -> dict[str, Any]:
         """パフォーマンス分析を実行
 
         Args:
@@ -136,7 +136,7 @@ class AnalystBee(WorkerBee):
             )
 
     @error_handler
-    def code_metrics(self, target_path: str, task_id: int | None = None) -> dict[str, Any]:
+    def code_metrics(self, target_path: str, task_id: str | None = None) -> dict[str, Any]:
         """コード品質メトリクスを計算
 
         Args:
@@ -207,7 +207,7 @@ class AnalystBee(WorkerBee):
             )
 
     @error_handler
-    def quality_assessment(self, target_path: str, task_id: int | None = None) -> dict[str, Any]:
+    def quality_assessment(self, target_path: str, task_id: str | None = None) -> dict[str, Any]:
         """品質評価を実行
 
         Args:
@@ -299,7 +299,7 @@ class AnalystBee(WorkerBee):
 
     @error_handler
     def report_generation(
-        self, analysis_results: list[dict[str, Any]], task_id: int | None = None
+        self, analysis_results: list[dict[str, Any]], task_id: str | None = None
     ) -> str:
         """分析結果からレポートを生成
 

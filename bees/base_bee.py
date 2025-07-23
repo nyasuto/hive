@@ -153,9 +153,7 @@ class BaseBee:
             raise DatabaseConnectionError(str(self.hive_db_path), e)
 
     @wrap_database_error
-    def _update_bee_state(
-        self, status: str, task_id: str | int | None = None, workload: int = 0
-    ) -> None:
+    def _update_bee_state(self, status: str, task_id: str | None = None, workload: int = 0) -> None:
         """
         Bee状態をデータベースで更新
 
@@ -219,7 +217,7 @@ class BaseBee:
         message_type: str,
         subject: str,
         content: str,
-        task_id: str | int | None = None,
+        task_id: str | None = None,
         priority: str = "normal",
     ) -> int:
         """他のBeeにメッセージを送信（tmux sender CLI中心）"""
@@ -273,7 +271,7 @@ class BaseBee:
 
         self.logger.info(f"Message {message_id} marked as processed")
 
-    def get_task_details(self, task_id: str | int) -> dict[str, Any] | None:
+    def get_task_details(self, task_id: str) -> dict[str, Any] | None:
         """タスクの詳細情報を取得"""
         with self._get_db_connection() as conn:
             cursor = conn.execute(
@@ -285,7 +283,7 @@ class BaseBee:
             row = cursor.fetchone()
             return dict(row) if row else None
 
-    def update_task_status(self, task_id: str | int, status: str, notes: str | None = None):
+    def update_task_status(self, task_id: str, status: str, notes: str | None = None):
         """タスク状態を更新"""
         with self._get_db_connection() as conn:
             # タスク状態更新
@@ -318,7 +316,7 @@ class BaseBee:
         self.logger.info(f"Task {task_id} status updated to: {status}")
 
     def log_activity(
-        self, task_id: str | int, activity_type: str, description: str, metadata: dict | None = None
+        self, task_id: str, activity_type: str, description: str, metadata: dict | None = None
     ):
         """アクティビティをログに記録"""
         with self._get_db_connection() as conn:
@@ -346,7 +344,7 @@ class BaseBee:
         message_type: str,
         subject: str,
         content: str,
-        task_id: str | int | None = None,
+        task_id: str | None = None,
     ):
         """CLI経由でtmux sender CLIメッセージを送信"""
         if target_bee not in self.pane_id_map:
@@ -592,10 +590,7 @@ class BaseBee:
                 elif line.startswith("**Task ID:**"):
                     task_id_str = line.replace("**Task ID:**", "").strip()
                     if task_id_str != "N/A":
-                        try:
-                            parsed_data["task_id"] = int(task_id_str)
-                        except ValueError:
-                            pass
+                        parsed_data["task_id"] = task_id_str
                 elif line.startswith("**Timestamp:**"):
                     parsed_data["timestamp"] = line.replace("**Timestamp:**", "").strip()
                 elif line.startswith("**Content:**"):
