@@ -40,6 +40,26 @@ test: ## Run all tests
 	@uv run pytest -v
 	@echo "✅ Tests completed"
 
+test-all: ## Run comprehensive test suite with coverage
+	@echo "🧪 Running comprehensive test suite..."
+	@uv run pytest -v --cov=bees --cov-report=html --cov-report=term-missing --cov-fail-under=90
+	@echo "✅ Comprehensive tests completed with coverage report"
+
+test-unit: ## Run unit tests only
+	@echo "🧪 Running unit tests..."
+	@uv run pytest -v -m unit
+	@echo "✅ Unit tests completed"
+
+test-integration: ## Run integration tests only
+	@echo "🧪 Running integration tests..."
+	@uv run pytest -v -m integration
+	@echo "✅ Integration tests completed"
+
+test-coverage: ## Generate coverage report
+	@echo "📊 Generating coverage report..."
+	@uv run pytest --cov=bees --cov-report=html --cov-report=xml --cov-report=term-missing
+	@echo "✅ Coverage report generated in htmlcov/"
+
 # Cleanup
 clean: ## Clean temporary files and sessions
 	@echo "🧹 Cleaning up..."
