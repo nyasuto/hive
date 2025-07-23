@@ -4,7 +4,6 @@ import axios, { AxiosResponse } from 'axios';
 import {
   Agent,
   Task,
-  Message,
   SystemHealth,
   ConversationStats,
   DashboardSummary,
@@ -13,8 +12,7 @@ import {
   TaskCreateRequest,
   InstructionTemplate,
   AgentListResponse,
-  TaskListResponse,
-  MessageListResponse
+  TaskListResponse
 } from '../types';
 
 const API_BASE = process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:8000/api';
