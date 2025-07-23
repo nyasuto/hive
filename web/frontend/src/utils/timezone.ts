@@ -9,8 +9,8 @@ export const getBrowserTimezone = (): string => {
 };
 
 /**
- * Converts a UTC timestamp to local time and formats it for Japanese locale
- * @param timestamp ISO timestamp string (assumed to be UTC)
+ * Converts a timestamp to local time and formats it for Japanese locale
+ * @param timestamp ISO timestamp string (assumed to be in local timezone already)
  * @param options Intl.DateTimeFormatOptions for customizing the output
  * @returns Formatted timestamp string in local timezone
  */
@@ -25,7 +25,7 @@ export const formatTimestampLocal = (
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
-    timeZone: getBrowserTimezone(),
+    // Remove timeZone option since timestamp is already in local time
     ...options
   };
 
@@ -34,8 +34,7 @@ export const formatTimestampLocal = (
 
 /**
  * Formats timestamp as relative time in Japanese (e.g., "3分前", "2時間前")
- * Automatically converts UTC to local time for calculation
- * @param timestamp ISO timestamp string (assumed to be UTC)
+ * @param timestamp ISO timestamp string (assumed to be in local timezone already)
  * @returns Relative time string in Japanese
  */
 export const formatRelativeTimeLocal = (timestamp: string): string => {
