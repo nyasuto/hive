@@ -1,0 +1,157 @@
+{
+  "beekeeper_instructions": [
+    {
+      "instruction": "issue 47を実装してください",
+      "target_bee": "developer",
+      "priority": "high",
+      "expected_keywords": ["実装"],
+      "should_create_task": true
+    },
+    {
+      "instruction": "テストを実行してください",
+      "target_bee": "qa", 
+      "priority": "normal",
+      "expected_keywords": ["テスト"],
+      "should_create_task": true
+    },
+    {
+      "instruction": "進捗はどうですか？",
+      "target_bee": "all",
+      "priority": "low",
+      "expected_keywords": ["進捗"],
+      "should_create_task": false
+    },
+    {
+      "instruction": "緊急でバグを修正してください",
+      "target_bee": "developer",
+      "priority": "urgent",
+      "expected_keywords": ["緊急", "修正"],
+      "should_create_task": true
+    }
+  ],
+  "bee_conversations": [
+    {
+      "from_bee": "queen",
+      "to_bee": "developer",
+      "message_type": "task_update",
+      "content": "新しいタスクを割り当てました",
+      "sender_cli_used": true,
+      "task_id": "test-task-1"
+    },
+    {
+      "from_bee": "developer", 
+      "to_bee": "queen",
+      "message_type": "response",
+      "content": "タスクを受け入れました",
+      "sender_cli_used": true,
+      "task_id": "test-task-1"
+    },
+    {
+      "from_bee": "qa",
+      "to_bee": "developer", 
+      "message_type": "question",
+      "content": "テストが失敗しています",
+      "sender_cli_used": false,
+      "task_id": "test-task-1"
+    }
+  ],
+  "test_tasks": [
+    {
+      "task_id": "test-task-1",
+      "title": "テストタスク1",
+      "description": "テスト用のタスクです",
+      "status": "pending",
+      "priority": "medium",
+      "assigned_to": "developer",
+      "created_by": "beekeeper"
+    },
+    {
+      "task_id": "test-task-2", 
+      "title": "自動生成タスク",
+      "description": "自動生成されたタスクです",
+      "status": "pending",
+      "priority": "high",
+      "assigned_to": "qa",
+      "created_by": "beekeeper"
+    }
+  ],
+  "conversation_scenarios": {
+    "successful_flow": {
+      "description": "正常な会話フロー",
+      "steps": [
+        {
+          "action": "beekeeper_instruction",
+          "data": {
+            "instruction": "新機能を実装してください",
+            "target": "developer"
+          }
+        },
+        {
+          "action": "auto_task_creation",
+          "expected": {
+            "title": "新機能を実装してください",
+            "assigned_to": "developer"
+          }
+        },
+        {
+          "action": "bee_communication",
+          "data": {
+            "from_bee": "queen",
+            "to_bee": "developer",
+            "content": "タスクが割り当てられました"
+          }
+        }
+      ]
+    },
+    "cli_violation": {
+      "description": "sender CLI違反シナリオ",
+      "steps": [
+        {
+          "action": "bee_communication",
+          "data": {
+            "from_bee": "developer",
+            "to_bee": "qa",
+            "content": "直接メッセージ",
+            "sender_cli_used": false
+          }
+        },
+        {
+          "action": "violation_detection",
+          "expected": {
+            "violation_count": 1,
+            "warning_sent": true
+          }
+        }
+      ]
+    },
+    "high_volume": {
+      "description": "大量メッセージシナリオ",
+      "message_count": 1000,
+      "concurrent_writers": 5,
+      "expected_performance": {
+        "max_insert_time_ms": 100,
+        "max_query_time_ms": 50
+      }
+    }
+  },
+  "error_scenarios": [
+    {
+      "name": "database_connection_failure",
+      "description": "データベース接続失敗",
+      "error_type": "DatabaseConnectionError",
+      "trigger": "invalid_db_path"
+    },
+    {
+      "name": "tmux_session_not_found", 
+      "description": "tmuxセッション未発見",
+      "error_type": "subprocess.CalledProcessError",
+      "trigger": "tmux_has_session_false"
+    },
+    {
+      "name": "permission_denied",
+      "description": "権限エラー",
+      "error_type": "PermissionError", 
+      "trigger": "readonly_database"
+    }
+  ]
+}
