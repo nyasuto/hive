@@ -72,7 +72,7 @@ class QueenBee(BaseBee):
         description: str,
         priority: str,
         estimated_hours: float | None,
-        parent_task_id: int | None,
+        parent_task_id: str | int | None,
     ) -> None:
         """タスク入力値を検証
 
@@ -117,7 +117,9 @@ class QueenBee(BaseBee):
                 )
 
         if parent_task_id is not None:
-            if not isinstance(parent_task_id, int) or parent_task_id <= 0:
+            if not isinstance(parent_task_id, int | str) or (
+                isinstance(parent_task_id, int) and parent_task_id <= 0
+            ):
                 raise TaskValidationError(f"Invalid parent_task_id: {parent_task_id}")
 
     @error_handler
@@ -127,7 +129,7 @@ class QueenBee(BaseBee):
         description: str,
         priority: str = "medium",
         estimated_hours: float | None = None,
-        parent_task_id: int | None = None,
+        parent_task_id: str | int | None = None,
     ) -> int:
         """新しいタスクを作成
 
@@ -197,7 +199,7 @@ class QueenBee(BaseBee):
             raise DatabaseConnectionError(f"Failed to create task '{title}': {e}") from e
 
     @error_handler
-    def decompose_task(self, task_id: int, subtasks: list[dict[str, Any]]) -> list[int]:
+    def decompose_task(self, task_id: str | int, subtasks: list[dict[str, Any]]) -> list[int]:
         """タスクをサブタスクに分解
 
         Args:
@@ -212,7 +214,7 @@ class QueenBee(BaseBee):
             WorkflowError: タスク分解処理に失敗した場合
         """
         # 入力値検証
-        if not isinstance(task_id, int) or task_id <= 0:
+        if not isinstance(task_id, int | str) or (isinstance(task_id, int) and task_id <= 0):
             raise TaskValidationError(f"Invalid task_id: {task_id}")
 
         if not subtasks or not isinstance(subtasks, list):
@@ -293,7 +295,7 @@ class QueenBee(BaseBee):
 
     @error_handler
     def assign_task_to_bee(
-        self, task_id: int, target_bee: str, assignment_reason: str = ""
+        self, task_id: str | int, target_bee: str, assignment_reason: str = ""
     ) -> bool:
         """指定されたBeeにタスクを割り当て
 
@@ -311,7 +313,7 @@ class QueenBee(BaseBee):
             WorkflowError: ワークロードが上限を超えている場合
         """
         # 入力値検証
-        if not isinstance(task_id, int) or task_id <= 0:
+        if not isinstance(task_id, int | str) or (isinstance(task_id, int) and task_id <= 0):
             raise TaskValidationError(f"Invalid task_id: {task_id}")
 
         if not target_bee or not isinstance(target_bee, str):
@@ -900,7 +902,7 @@ class QueenBee(BaseBee):
             raise
 
     @error_handler
-    def _handle_task_completion(self, task_id: int, completed_by: str) -> None:
+    def _handle_task_completion(self, task_id: str | int, completed_by: str) -> None:
         """タスク完了時の処理
 
         Args:
@@ -911,7 +913,7 @@ class QueenBee(BaseBee):
             TaskValidationError: タスクIDが無効な場合
             BeeNotFoundError: 完了者が無効な場合
         """
-        if not isinstance(task_id, int) or task_id <= 0:
+        if not isinstance(task_id, int | str) or (isinstance(task_id, int) and task_id <= 0):
             raise TaskValidationError(f"Invalid task_id: {task_id}")
 
         if not completed_by or completed_by not in self.available_bees:
@@ -971,7 +973,7 @@ class QueenBee(BaseBee):
             raise
 
     @error_handler
-    def _get_parent_task(self, task_id: int) -> dict[str, Any] | None:
+    def _get_parent_task(self, task_id: str | int) -> dict[str, Any] | None:
         """親タスクを取得
 
         Args:
@@ -984,7 +986,7 @@ class QueenBee(BaseBee):
             TaskValidationError: タスクIDが無効な場合
             DatabaseConnectionError: データベースアクセスに失敗した場合
         """
-        if not isinstance(task_id, int) or task_id <= 0:
+        if not isinstance(task_id, int | str) or (isinstance(task_id, int) and task_id <= 0):
             raise TaskValidationError(f"Invalid task_id: {task_id}")
 
         try:
@@ -1004,7 +1006,7 @@ class QueenBee(BaseBee):
             raise DatabaseConnectionError(f"Failed to get parent task for {task_id}: {e}") from e
 
     @error_handler
-    def _all_subtasks_completed(self, parent_task_id: int) -> bool:
+    def _all_subtasks_completed(self, parent_task_id: str | int) -> bool:
         """すべてのサブタスクが完了しているかチェック
 
         Args:
@@ -1017,7 +1019,9 @@ class QueenBee(BaseBee):
             TaskValidationError: 親タスクIDが無効な場合
             DatabaseConnectionError: データベースアクセスに失敗した場合
         """
-        if not isinstance(parent_task_id, int) or parent_task_id <= 0:
+        if not isinstance(parent_task_id, int | str) or (
+            isinstance(parent_task_id, int) and parent_task_id <= 0
+        ):
             raise TaskValidationError(f"Invalid parent_task_id: {parent_task_id}")
 
         try:
