@@ -1,0 +1,118 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900 font-sans;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200;
+  }
+  
+  .btn {
+    @apply px-4 py-2 rounded-md font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+  
+  .btn-primary {
+    @apply btn bg-hive-primary text-white hover:bg-amber-600 focus:ring-amber-500;
+  }
+  
+  .btn-secondary {
+    @apply btn bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500;
+  }
+  
+  .btn-success {
+    @apply btn bg-emerald-500 text-white hover:bg-emerald-600 focus:ring-emerald-500;
+  }
+  
+  .btn-danger {
+    @apply btn bg-red-500 text-white hover:bg-red-600 focus:ring-red-500;
+  }
+  
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .badge-success {
+    @apply badge bg-emerald-100 text-emerald-800;
+  }
+  
+  .badge-warning {
+    @apply badge bg-amber-100 text-amber-800;
+  }
+  
+  .badge-danger {
+    @apply badge bg-red-100 text-red-800;
+  }
+  
+  .badge-info {
+    @apply badge bg-blue-100 text-blue-800;
+  }
+  
+  .badge-gray {
+    @apply badge bg-gray-100 text-gray-800;
+  }
+  
+  .status-indicator {
+    @apply inline-block w-2 h-2 rounded-full;
+  }
+  
+  .status-idle {
+    @apply status-indicator bg-status-idle;
+  }
+  
+  .status-busy {
+    @apply status-indicator bg-status-busy animate-pulse;
+  }
+  
+  .status-waiting {
+    @apply status-indicator bg-status-waiting animate-pulse-slow;
+  }
+  
+  .status-offline {
+    @apply status-indicator bg-status-offline;
+  }
+  
+  .status-error {
+    @apply status-indicator bg-status-error animate-bounce-slow;
+  }
+  
+  .agent-queen {
+    @apply border-l-4 border-agent-queen;
+  }
+  
+  .agent-developer {
+    @apply border-l-4 border-agent-developer;  
+  }
+  
+  .agent-qa {
+    @apply border-l-4 border-agent-qa;
+  }
+  
+  .agent-analyst {
+    @apply border-l-4 border-agent-analyst;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
