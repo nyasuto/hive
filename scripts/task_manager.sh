@@ -59,20 +59,27 @@ create_task() {
     
     log_info "Creating task: $title"
     
+    # UUID生成（macOS/Linux対応）
+    local task_id
+    if command -v uuidgen >&/dev/null; then
+        task_id=$(uuidgen)
+    else
+        task_id=$(python3 -c "import uuid; print(str(uuid.uuid4()))")
+    fi
+    
     # SQLクエリで特殊文字をエスケープ
     local escaped_title
     local escaped_description
     escaped_title=$(printf '%s\n' "$title" | sed "s/'/''/g")
     escaped_description=$(printf '%s\n' "$description" | sed "s/'/''/g")
     
-    local task_id
-    task_id=$(sqlite3 "$DB_PATH" "
-        INSERT INTO tasks (title, description, priority, assigned_to, due_date)
-        VALUES ('$escaped_title', '$escaped_description', '$priority', 
+    # UUIDを使ってタスクを挿入
+    sqlite3 "$DB_PATH" "
+        INSERT INTO tasks (task_id, title, description, priority, assigned_to, due_date)
+        VALUES ('$task_id', '$escaped_title', '$escaped_description', '$priority', 
                 $(if [[ -n "$assigned_to" ]]; then echo "'$assigned_to'"; else echo "NULL"; fi),
-                $(if [[ -n "$due_date" ]]; then echo "'$due_date'"; else echo "NULL"; fi))
-        RETURNING task_id;
-    ")
+                $(if [[ -n "$due_date" ]]; then echo "'$due_date'"; else echo "NULL"; fi));
+    "
     
     if [[ -n "$task_id" ]]; then
         # Task IDを先に出力（beehive.shから取得するため）
@@ -109,7 +116,7 @@ update_task_status() {
     
     # 現在のステータスを取得
     local old_status
-    old_status=$(sqlite3 "$DB_PATH" "SELECT status FROM tasks WHERE task_id = $task_id;")
+    old_status=$(sqlite3 "$DB_PATH" "SELECT status FROM tasks WHERE task_id = '$task_id';")
     
     if [[ -z "$old_status" ]]; then
         log_error "Task not found: $task_id"
@@ -132,7 +139,7 @@ update_task_status() {
     sqlite3 "$DB_PATH" "
         UPDATE tasks 
         SET $update_fields
-        WHERE task_id = $task_id;
+        WHERE task_id = '$task_id';
     "
     
     log_task_activity "$task_id" "$bee_name" "status_update" \
@@ -143,7 +150,7 @@ update_task_status() {
     # 完了時は担当者に通知
     if [[ "$new_status" == "completed" ]]; then
         local assigned_to
-        assigned_to=$(sqlite3 "$DB_PATH" "SELECT assigned_to FROM tasks WHERE task_id = $task_id;")
+        assigned_to=$(sqlite3 "$DB_PATH" "SELECT assigned_to FROM tasks WHERE task_id = '$task_id';")
         if [[ -n "$assigned_to" && "$assigned_to" != "NULL" ]]; then
             send_message "system" "$assigned_to" "task_update" "タスク完了確認" \
                 "タスクが完了しました。確認をお願いします。" "$task_id"
@@ -166,10 +173,10 @@ assign_task() {
     sqlite3 "$DB_PATH" "
         UPDATE tasks 
         SET assigned_to = '$assigned_to', updated_at = CURRENT_TIMESTAMP
-        WHERE task_id = $task_id;
+        WHERE task_id = '$task_id';
         
         INSERT INTO task_assignments (task_id, assigned_to, assigned_by, assignment_type)
-        VALUES ($task_id, '$assigned_to', '$assigned_by', '$assignment_type');
+        VALUES ('$task_id', '$assigned_to', '$assigned_by', '$assignment_type');
     "
     
     log_task_activity "$task_id" "$assigned_by" "assignment" \
@@ -177,7 +184,7 @@ assign_task() {
     
     # 担当者に通知
     local task_title
-    task_title=$(sqlite3 "$DB_PATH" "SELECT title FROM tasks WHERE task_id = $task_id;")
+    task_title=$(sqlite3 "$DB_PATH" "SELECT title FROM tasks WHERE task_id = '$task_id';")
     
     send_message "$assigned_by" "$assigned_to" "task_update" "新しいタスクの割り当て" \
         "「$task_title」があなたに割り当てられました。作業を開始してください。" "$task_id"
@@ -199,7 +206,7 @@ update_bee_state() {
     sqlite3 "$DB_PATH" "
         UPDATE bee_states 
         SET status = '$status',
-            current_task_id = $(if [[ -n "$current_task_id" ]]; then echo "$current_task_id"; else echo "NULL"; fi),
+            current_task_id = $(if [[ -n "$current_task_id" ]]; then echo "'$current_task_id'"; else echo "NULL"; fi),
             workload_score = $workload_score,
             last_heartbeat = CURRENT_TIMESTAMP,
             updated_at = CURRENT_TIMESTAMP
@@ -232,7 +239,7 @@ send_message() {
     sqlite3 "$DB_PATH" "
         INSERT INTO bee_messages (from_bee, to_bee, message_type, subject, content, task_id, priority)
         VALUES ('$from_bee', '$to_bee', '$message_type', '$escaped_subject', '$escaped_content',
-                $(if [[ -n "$task_id" ]]; then echo "$task_id"; else echo "NULL"; fi), '$priority');
+                $(if [[ -n "$task_id" ]]; then echo "'$task_id'"; else echo "NULL"; fi), '$priority');
     "
     
     log_success "Message sent to $to_bee"
@@ -256,7 +263,7 @@ log_task_activity() {
     
     sqlite3 "$DB_PATH" "
         INSERT INTO task_activity (task_id, bee_name, activity_type, description, metadata)
-        VALUES ($task_id, '$bee_name', '$activity_type', '$escaped_description', 
+        VALUES ('$task_id', '$bee_name', '$activity_type', '$escaped_description', 
                 $(if [[ -n "$metadata" ]]; then echo "'$escaped_metadata'"; else echo "NULL"; fi));
     "
 }
@@ -336,7 +343,7 @@ get_task_details() {
                created_at, updated_at, started_at, completed_at, due_date,
                estimated_hours, actual_hours, tags, metadata, created_by
         FROM tasks 
-        WHERE task_id = $task_id;
+        WHERE task_id = '$task_id';
     "
 }
 

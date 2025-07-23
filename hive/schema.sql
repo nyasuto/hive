@@ -11,7 +11,7 @@ PRAGMA foreign_keys = ON;
 
 -- Main tasks table - stores all tasks assigned to the hive
 CREATE TABLE IF NOT EXISTS tasks (
-    task_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id TEXT PRIMARY KEY, -- UUID-based task identifier
     title TEXT NOT NULL,
     description TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'completed', 'failed', 'cancelled')),
@@ -26,15 +26,15 @@ CREATE TABLE IF NOT EXISTS tasks (
     actual_hours REAL,
     tags TEXT, -- JSON array of tags
     metadata TEXT, -- JSON for additional task data
-    parent_task_id INTEGER REFERENCES tasks(task_id),
+    parent_task_id TEXT REFERENCES tasks(task_id),
     created_by TEXT DEFAULT 'human' -- 'human', 'queen', 'developer', 'qa', 'analyst'
 );
 
 -- Task dependencies - manage task ordering and dependencies
 CREATE TABLE IF NOT EXISTS task_dependencies (
     dependency_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    task_id INTEGER NOT NULL REFERENCES tasks(task_id) ON DELETE CASCADE,
-    depends_on_task_id INTEGER NOT NULL REFERENCES tasks(task_id) ON DELETE CASCADE,
+    task_id TEXT NOT NULL REFERENCES tasks(task_id) ON DELETE CASCADE,
+    depends_on_task_id TEXT NOT NULL REFERENCES tasks(task_id) ON DELETE CASCADE,
     dependency_type TEXT NOT NULL DEFAULT 'blocks' CHECK (dependency_type IN ('blocks', 'related', 'subtask')),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(task_id, depends_on_task_id)
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS task_dependencies (
 -- Task assignments and work distribution
 CREATE TABLE IF NOT EXISTS task_assignments (
     assignment_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    task_id INTEGER NOT NULL REFERENCES tasks(task_id) ON DELETE CASCADE,
+    task_id TEXT NOT NULL REFERENCES tasks(task_id) ON DELETE CASCADE,
     assigned_to TEXT NOT NULL, -- 'queen', 'developer', 'qa', 'analyst'
     assigned_by TEXT NOT NULL, -- who made the assignment
     assignment_type TEXT NOT NULL DEFAULT 'primary' CHECK (assignment_type IN ('primary', 'reviewer', 'collaborator')),
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS task_assignments (
 -- Task activity log - track all changes and activities
 CREATE TABLE IF NOT EXISTS task_activity (
     activity_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    task_id INTEGER NOT NULL REFERENCES tasks(task_id) ON DELETE CASCADE,
+    task_id TEXT NOT NULL REFERENCES tasks(task_id) ON DELETE CASCADE,
     bee_name TEXT NOT NULL, -- 'queen', 'developer', 'qa', 'analyst', 'system'
     activity_type TEXT NOT NULL, -- 'created', 'updated', 'assigned', 'started', 'completed', 'comment', etc.
     description TEXT NOT NULL,
@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS bee_messages (
     message_type TEXT NOT NULL DEFAULT 'info' CHECK (message_type IN ('info', 'question', 'request', 'response', 'alert', 'task_update')),
     subject TEXT,
     content TEXT NOT NULL,
-    task_id INTEGER REFERENCES tasks(task_id), -- optional task reference
+    task_id TEXT REFERENCES tasks(task_id), -- optional task reference
     priority TEXT NOT NULL DEFAULT 'normal' CHECK (priority IN ('low', 'normal', 'high', 'urgent')),
     processed BOOLEAN NOT NULL DEFAULT FALSE,
     processed_at DATETIME,
@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS bee_states (
     state_id INTEGER PRIMARY KEY AUTOINCREMENT,
     bee_name TEXT NOT NULL UNIQUE, -- 'queen', 'developer', 'qa', 'analyst'
     status TEXT NOT NULL DEFAULT 'idle' CHECK (status IN ('idle', 'busy', 'waiting', 'offline', 'error')),
-    current_task_id INTEGER REFERENCES tasks(task_id),
+    current_task_id TEXT REFERENCES tasks(task_id),
     last_activity DATETIME DEFAULT CURRENT_TIMESTAMP,
     last_heartbeat DATETIME DEFAULT CURRENT_TIMESTAMP,
     capabilities TEXT, -- JSON array of bee capabilities
@@ -112,7 +112,7 @@ CREATE TABLE IF NOT EXISTS context_snapshots (
     context_type TEXT NOT NULL CHECK (context_type IN ('role', 'task', 'conversation', 'system')),
     title TEXT NOT NULL,
     content TEXT NOT NULL,
-    task_id INTEGER REFERENCES tasks(task_id),
+    task_id TEXT REFERENCES tasks(task_id),
     importance_score INTEGER DEFAULT 5 CHECK (importance_score BETWEEN 1 AND 10),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     expires_at DATETIME,
@@ -128,7 +128,7 @@ CREATE TABLE IF NOT EXISTS context_snapshots (
 -- Work handoffs between bees
 CREATE TABLE IF NOT EXISTS work_handoffs (
     handoff_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    task_id INTEGER NOT NULL REFERENCES tasks(task_id) ON DELETE CASCADE,
+    task_id TEXT NOT NULL REFERENCES tasks(task_id) ON DELETE CASCADE,
     from_bee TEXT NOT NULL,
     to_bee TEXT NOT NULL,
     handoff_type TEXT NOT NULL CHECK (handoff_type IN ('assignment', 'review', 'collaboration', 'escalation')),
@@ -145,7 +145,7 @@ CREATE TABLE IF NOT EXISTS work_handoffs (
 -- Quality gates and checkpoints
 CREATE TABLE IF NOT EXISTS quality_gates (
     gate_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    task_id INTEGER NOT NULL REFERENCES tasks(task_id) ON DELETE CASCADE,
+    task_id TEXT NOT NULL REFERENCES tasks(task_id) ON DELETE CASCADE,
     gate_name TEXT NOT NULL,
     gate_type TEXT NOT NULL CHECK (gate_type IN ('code_review', 'testing', 'documentation', 'approval', 'deployment')),
     criteria TEXT NOT NULL, -- JSON array of gate criteria
