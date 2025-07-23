@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# inject_roles.sh - Inject role definitions into Claude agents via send-keys CLI
+# inject_roles.sh - Inject role definitions into Claude agents via sender CLI
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

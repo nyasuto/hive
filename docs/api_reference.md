@@ -18,7 +18,7 @@ Claude Multi-Agent Development System の全パブリッククラス・関数仕
 ### BaseBee
 
 **モジュール**: `bees.base_bee`  
-**説明**: すべてのエージェントの基底クラス。SQLite + tmux send-keys通信プロトコルを提供。
+**説明**: すべてのエージェントの基底クラス。SQLite + tmux sender CLI通信プロトコルを提供。
 
 #### コンストラクタ
 
@@ -50,7 +50,7 @@ def send_message(
 ) -> int
 ```
 
-他のBeeにメッセージを送信（tmux send-keys使用）
+他のBeeにメッセージを送信（tmux sender CLI使用）
 
 **パラメータ**:
 - `to_bee` (str): 送信先Bee名

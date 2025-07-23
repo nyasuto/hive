@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Beehive CLI Tool
-Issue #25: send-keys処理のCLI化とSQLite透過保存
+Beehive Sender CLI Tool
+Issue #25: sender CLI処理のCLI化とSQLite透過保存
 
-tmux send-keysの処理を集約し、SQLiteでの透過的ログ保存を提供
+tmux sender CLIの処理を集約し、SQLiteでの透過的ログ保存を提供
 """
 
 import argparse
@@ -23,8 +23,8 @@ from .exceptions import DatabaseOperationError, TmuxCommandError, ValidationErro
 from .logging_config import get_logger
 
 
-class SendKeysCLI:
-    """send-keys処理のCLI化クラス"""
+class SenderCLI:
+    """sender CLI処理のCLI化クラス"""
 
     def __init__(self):
         self.config = get_config()
@@ -37,7 +37,7 @@ class SendKeysCLI:
         try:
             with sqlite3.connect(self.db_path) as conn:
                 conn.execute("""
-                    CREATE TABLE IF NOT EXISTS send_keys_log (
+                    CREATE TABLE IF NOT EXISTS sender_cli_log (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         timestamp TEXT NOT NULL,
                         session_name TEXT NOT NULL,
@@ -55,7 +55,7 @@ class SendKeysCLI:
         except sqlite3.Error as e:
             raise DatabaseOperationError("create_tables", "CREATE TABLE", e)
 
-    def send_keys(
+    def send_message(
         self,
         session_name: str,
         target_pane: str,
@@ -68,7 +68,7 @@ class SendKeysCLI:
         include_sender_header: bool = True,  # sender情報をメッセージ先頭に含める
     ) -> bool:
         """
-        tmux send-keysコマンドを実行し、SQLiteにログを保存
+        tmux sender CLIコマンドを実行し、SQLiteにログを保存
 
         Args:
             session_name: tmuxセッション名
@@ -103,7 +103,7 @@ class SendKeysCLI:
 
         try:
             if not dry_run:
-                # tmux send-keysコマンドを実行
+                # tmux sender CLIコマンドを実行
                 # ペインIDが%で始まる場合は特別な形式を使用
                 if target_pane.startswith("%"):
                     target = target_pane  # %0形式の場合はそのまま使用
@@ -129,25 +129,25 @@ class SendKeysCLI:
                         error_message = f"Failed to send message ({len(formatted_message)} chars)"
 
                 # 必ず最後に1秒待ってEnterを送信
-                # tmuxで大量テキスト送信後の確定処理として必要
+                # tmuxで大量メッセージ送信後の確定処理として必要
                 time.sleep(1)
                 cmd = ["tmux", "send-keys", "-t", target, "Enter"]
                 subprocess.run(cmd, capture_output=True, text=True, timeout=10)
 
-                self.logger.info(f"Send-keys executed: {target} <- {formatted_message[:50]}...")
+                self.logger.info(f"Sender CLI executed: {target} <- {formatted_message[:50]}...")
             else:
                 # ドライランでも同様の待機時間をシミュレート
                 time.sleep(1)
                 self.logger.info(
-                    f"[DRY-RUN] Send-keys: {session_name}:{target_pane} <- {formatted_message[:50]}... + Enter (1s delay)"
+                    f"[DRY-RUN] Sender CLI: {session_name}:{target_pane} <- {formatted_message[:50]}... + Enter (1s delay)"
                 )
 
         except subprocess.TimeoutExpired:
             success = False
-            error_message = "tmux send-keys command timed out"
+            error_message = "tmux sender CLI command timed out"
         except subprocess.CalledProcessError as e:
             success = False
-            error_message = f"tmux send-keys failed: {e.stderr}"
+            error_message = f"tmux sender CLI failed: {e.stderr}"
         except Exception as e:
             success = False
             error_message = f"Unexpected error: {str(e)}"
@@ -166,12 +166,12 @@ class SendKeysCLI:
                 error_message=error_message,
             )
         except Exception as e:
-            self.logger.error(f"Failed to save send-keys log to database: {e}")
-            # ログ保存失敗してもsend-keys処理は継続
+            self.logger.error(f"Failed to save sender CLI log to database: {e}")
+            # ログ保存失敗してもsender CLI処理は継続
 
         if not success and error_message:
             raise TmuxCommandError(
-                f"send-keys to {session_name}:{target_pane}", Exception(error_message)
+                f"sender CLI to {session_name}:{target_pane}", Exception(error_message)
             )
 
         return success
@@ -260,7 +260,7 @@ class SendKeysCLI:
             with sqlite3.connect(self.db_path) as conn:
                 conn.execute(
                     """
-                    INSERT INTO send_keys_log (
+                    INSERT INTO sender_cli_log (
                         timestamp, session_name, target_pane, message,
                         message_type, sender, metadata, success, error_message
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -279,16 +279,16 @@ class SendKeysCLI:
                 )
                 conn.commit()
         except sqlite3.Error as e:
-            raise DatabaseOperationError("save_send_keys_log", "INSERT", e)
+            raise DatabaseOperationError("save_sender_cli_log", "INSERT", e)
 
     def get_recent_logs(self, limit: int = 50) -> list:
-        """最近のsend-keysログを取得"""
+        """最近のsender CLIログを取得"""
         try:
             with sqlite3.connect(self.db_path) as conn:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.execute(
                     """
-                    SELECT * FROM send_keys_log
+                    SELECT * FROM sender_cli_log
                     ORDER BY created_at DESC
                     LIMIT ?
                 """,
@@ -305,7 +305,7 @@ class SendKeysCLI:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.execute(
                     """
-                    SELECT * FROM send_keys_log
+                    SELECT * FROM sender_cli_log
                     WHERE session_name = ?
                     ORDER BY created_at DESC
                     LIMIT ?
@@ -391,33 +391,33 @@ class SendKeysCLI:
 def main():
     """CLI エントリーポイント"""
     parser = argparse.ArgumentParser(
-        description="Beehive send-keys CLI tool with SQLite logging",
+        description="Beehive sender CLI tool with SQLite logging",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   # 基本的なメッセージ送信
-  beehive send-keys beehive 0.0 "Hello, Worker Bee!"
+  beehive sender beehive 0.0 "Hello, Worker Bee!"
 
   # 役割注入
-  beehive send-keys beehive 0.0 "You are Queen Bee" --type role_injection --sender system
+  beehive sender beehive 0.0 "You are Queen Bee" --type role_injection --sender system
 
   # タスク割り当て
-  beehive send-keys beehive 0.1 "Task: Implement feature X" --type task_assignment --sender queen
+  beehive sender beehive 0.1 "Task: Implement feature X" --type task_assignment --sender queen
 
   # ログ表示
-  beehive send-keys --logs --limit 20
-  beehive send-keys --logs --session beehive --limit 10
+  beehive sender --logs --limit 20
+  beehive sender --logs --session beehive --limit 10
 
   # ドライラン
-  beehive send-keys beehive 0.0 "test message" --dry-run
+  beehive sender beehive 0.0 "test message" --dry-run
         """,
     )
 
     # サブコマンドの設定
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
-    # send-keysサブコマンド
-    send_parser = subparsers.add_parser("send", help="Send keys to tmux pane")
+    # sender CLIサブコマンド
+    send_parser = subparsers.add_parser("send", help="Send message to tmux pane")
     send_parser.add_argument("session_name", help="tmux session name")
     send_parser.add_argument("target_pane", help="Target pane (e.g., 0.0, 0.1)")
     send_parser.add_argument("message", help="Message to send")
@@ -425,14 +425,14 @@ Examples:
     send_parser.add_argument("--sender", help="Sender identifier")
     send_parser.add_argument("--metadata", help="Additional metadata as JSON string")
     send_parser.add_argument(
-        "--dry-run", action="store_true", help="Dry run mode (no actual send-keys)"
+        "--dry-run", action="store_true", help="Dry run mode (no actual sender CLI)"
     )
     send_parser.add_argument(
         "--no-sender-header", action="store_true", help="Disable sender info header in message"
     )
 
     # ログ表示サブコマンド
-    logs_parser = subparsers.add_parser("logs", help="Show send-keys logs")
+    logs_parser = subparsers.add_parser("logs", help="Show sender CLI logs")
     logs_parser.add_argument("--session", help="Filter by session name")
     logs_parser.add_argument("--limit", type=int, default=50, help="Limit number of results")
     logs_parser.add_argument(
@@ -447,7 +447,7 @@ Examples:
     args = parser.parse_args()
 
     try:
-        cli = SendKeysCLI()
+        cli = SenderCLI()
 
         if args.command == "send":
             metadata = None
@@ -458,7 +458,7 @@ Examples:
                     print(f"Error: Invalid JSON in --metadata: {args.metadata}", file=sys.stderr)
                     sys.exit(1)
 
-            success = cli.send_keys(
+            success = cli.send_message(
                 session_name=args.session_name,
                 target_pane=args.target_pane,
                 message=args.message,
@@ -486,7 +486,7 @@ Examples:
             else:
                 # テーブル形式で表示
                 if not logs:
-                    print("No send-keys logs found.")
+                    print("No sender CLI logs found.")
                     return
 
                 print(f"{'Timestamp':<20} {'Session':<10} {'Pane':<6} {'Type':<15} {'Message':<50}")

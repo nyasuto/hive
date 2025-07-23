@@ -4,7 +4,7 @@ Base Bee Class - 基本的な通信機能
 Issue #4: 基本的な自律実行システム
 Issue #22: コード品質・エラーハンドリング強化
 
-SQLite + tmux send-keys 通信プロトコルによる自律エージェント基底クラス
+SQLite + tmux sender CLI 通信プロトコルによる自律エージェント基底クラス
 """
 
 import json
@@ -220,7 +220,7 @@ class BaseBee:
         task_id: int | None = None,
         priority: str = "normal",
     ) -> int:
-        """他のBeeにメッセージを送信（tmux send-keys中心）"""
+        """他のBeeにメッセージを送信（tmux sender CLI中心）"""
         # SQLiteにはログとして記録のみ
         with self._get_db_connection() as conn:
             cursor = conn.execute(
@@ -234,7 +234,7 @@ class BaseBee:
             message_id = cursor.lastrowid
             conn.commit()
 
-        # 実際の通信はtmux send-keysで行う
+        # 実際の通信はtmux sender CLIで行う
         self._send_tmux_message(to_bee, message_type, subject, content, task_id)
 
         self.logger.info(f"Message sent to {to_bee}: {subject} (ID: {message_id})")
@@ -346,7 +346,7 @@ class BaseBee:
         content: str,
         task_id: int | None = None,
     ):
-        """CLI経由でtmux send-keysメッセージを送信"""
+        """CLI経由でtmux sender CLIメッセージを送信"""
         if target_bee not in self.pane_id_map:
             self.logger.warning(f"Unknown target bee: {target_bee}")
             return
@@ -373,7 +373,7 @@ class BaseBee:
         full_message = "\n".join(message_lines)
 
         try:
-            # CLI経由でsend-keys実行（bee名前を使用）
+            # CLI経由でsender CLI実行（bee名前を使用）
             target_display_name = self.pane_map.get(target_bee, target_bee)
             cmd = [
                 "python",
@@ -414,7 +414,7 @@ class BaseBee:
         notification = f"\n# {message}\n"
 
         try:
-            # CLI経由でsend-keys実行（bee名前を使用）
+            # CLI経由でsender CLI実行（bee名前を使用）
             target_display_name = self.pane_map.get(target_bee, target_bee)
             cmd = [
                 "python",

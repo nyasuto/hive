@@ -1,6 +1,6 @@
 #!/bin/bash
-# send_keys_helper.sh - Shell script helper for send-keys CLI
-# CLI経由でsend-keysを実行するためのヘルパー関数
+# send_keys_helper.sh - Shell script helper for sender CLI
+# CLI経由でsender CLIを実行するためのヘルパー関数
 
 # 設定
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)"
@@ -9,7 +9,7 @@ PYTHON_CLI="cd $PROJECT_ROOT && python -m bees.cli"
 # エラーハンドリング
 set -euo pipefail
 
-# ヘルパー関数: CLI経由でsend-keys実行
+# ヘルパー関数: CLI経由でsender CLI実行
 send_keys_cli() {
     local session_name="$1"
     local target_pane="$2"
@@ -82,7 +82,7 @@ send_notification() {
 }
 
 # ログ表示用のヘルパー
-show_send_keys_logs() {
+show_sender_cli_logs() {
     local session_name="${1:-}"
     local limit="${2:-20}"
     
@@ -96,11 +96,11 @@ show_send_keys_logs() {
 # 使用例の表示
 show_usage() {
     cat << EOF
-🐝 Beehive Send-Keys Helper Functions
+🐝 Beehive Sender CLI Helper Functions
 
 Available functions:
   send_keys_cli <session> <pane> <message> [type] [sender] [dry_run]
-      - General send-keys with CLI
+      - General sender CLI with CLI
   
   inject_role <session> <pane> <role_message> [dry_run]
       - Inject role to agent
@@ -111,8 +111,8 @@ Available functions:
   send_notification <session> <pane> <notification> [sender] [dry_run]
       - Send notification to agent
   
-  show_send_keys_logs [session] [limit]
-      - Show recent send-keys logs
+  show_sender_cli_logs [session] [limit]
+      - Show recent sender CLI logs
 
 Examples:
   # 役割注入
@@ -125,7 +125,7 @@ Examples:
   send_notification "beehive" "0.2" "Tests completed successfully"
   
   # ログ表示
-  show_send_keys_logs "beehive" 10
+  show_sender_cli_logs "beehive" 10
 
 Set BEEHIVE_DRY_RUN=true for dry run mode.
 EOF
@@ -152,7 +152,7 @@ main() {
             ;;
         "logs")
             shift
-            show_send_keys_logs "$@"
+            show_sender_cli_logs "$@"
             ;;
         "help"|*)
             show_usage
