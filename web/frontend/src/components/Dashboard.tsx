@@ -5,6 +5,7 @@ import { Activity, Users, CheckSquare, MessageSquare, AlertTriangle, Wifi, WifiO
 import { systemApi } from '../services/api';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { DashboardSummary, WebSocketMessage } from '../types';
+import { getCurrentTimeLocal, formatTimestampLocal } from '../utils/timezone';
 import AgentStatus from './AgentStatus';
 import TaskList from './TaskList';
 import InstructionForm from './InstructionForm';
@@ -25,7 +26,7 @@ const Dashboard: React.FC = () => {
       setError(null);
       const data = await systemApi.getDashboard();
       setDashboardData(data);
-      setLastUpdate(new Date().toLocaleTimeString('ja-JP'));
+      setLastUpdate(getCurrentTimeLocal());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'データの読み込みに失敗しました');
     } finally {
@@ -70,7 +71,7 @@ const Dashboard: React.FC = () => {
         console.log('Unknown WebSocket message type:', message.type);
     }
     
-    setLastUpdate(new Date().toLocaleTimeString('ja-JP'));
+    setLastUpdate(getCurrentTimeLocal());
   }, [lastMessage]);
 
   // Initial load
@@ -298,7 +299,7 @@ const Dashboard: React.FC = () => {
                             {message.content}
                           </p>
                           <p className="text-xs text-gray-400 mt-1">
-                            {new Date(message.created_at).toLocaleString('ja-JP')}
+                            {formatTimestampLocal(message.created_at)}
                           </p>
                         </div>
                       </div>

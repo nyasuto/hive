@@ -14,6 +14,7 @@ import {
   AgentListResponse,
   TaskListResponse
 } from '../types';
+import { formatTimestampLocal, formatRelativeTimeLocal } from '../utils/timezone';
 
 const API_BASE = process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:8000/api';
 
@@ -193,33 +194,11 @@ export const systemApi = {
 
 // Helper functions
 export const formatTimestamp = (timestamp: string): string => {
-  return new Date(timestamp).toLocaleString('ja-JP', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  });
+  return formatTimestampLocal(timestamp);
 };
 
 export const formatRelativeTime = (timestamp: string): string => {
-  const now = new Date();
-  const time = new Date(timestamp);
-  const diffMs = now.getTime() - time.getTime();
-  const diffMinutes = Math.floor(diffMs / (1000 * 60));
-  const diffHours = Math.floor(diffMinutes / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffMinutes < 1) {
-    return 'たった今';
-  } else if (diffMinutes < 60) {
-    return `${diffMinutes}分前`;
-  } else if (diffHours < 24) {
-    return `${diffHours}時間前`;
-  } else {
-    return `${diffDays}日前`;
-  }
+  return formatRelativeTimeLocal(timestamp);
 };
 
 export const getAgentDisplayName = (agentType: string): string => {
