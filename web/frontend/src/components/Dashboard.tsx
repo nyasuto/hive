@@ -41,17 +41,15 @@ const Dashboard: React.FC = () => {
     
     switch (message.type) {
       case 'agent_status_update':
-        if (dashboardData) {
-          setDashboardData(prev => prev ? {
-            ...prev,
-            agents: message.data.agents,
-            timestamp: message.timestamp
-          } : null);
-        }
+        setDashboardData(prev => prev ? {
+          ...prev,
+          agents: message.data.agents,
+          timestamp: message.timestamp
+        } : null);
         break;
         
       case 'task_update':
-        if (dashboardData && message.data.tasks) {
+        if (message.data.tasks) {
           setDashboardData(prev => prev ? {
             ...prev,
             recent_tasks: message.data.tasks,
@@ -73,7 +71,7 @@ const Dashboard: React.FC = () => {
     }
     
     setLastUpdate(new Date().toLocaleTimeString('ja-JP'));
-  }, [lastMessage, dashboardData]);
+  }, [lastMessage]);
 
   // Initial load
   useEffect(() => {

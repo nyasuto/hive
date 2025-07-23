@@ -20,7 +20,13 @@ async def get_all_agents():
         db_manager = get_db_manager()
         agents = db_manager.get_agents_status()
 
-        active_count = len([agent for agent in agents if agent.status.value != "offline"])
+        # Consider agent active only if heartbeat is within last 5 minutes
+        current_time = datetime.now()
+        active_count = len([
+            agent for agent in agents 
+            if agent.status.value != "offline" and 
+            (current_time - agent.last_heartbeat).total_seconds() < 300
+        ])
 
         return AgentListResponse(
             agents=agents,

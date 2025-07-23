@@ -60,7 +60,7 @@ async def global_exception_handler(request, exc):
         status_code=500,
         content=ErrorResponse(
             error="Internal Server Error", detail=str(exc), timestamp=datetime.now()
-        ).model_dump(),
+        ).model_dump(mode='json'),
     )
 
 

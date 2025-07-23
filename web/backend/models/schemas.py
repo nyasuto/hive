@@ -43,7 +43,6 @@ class Priority(str, Enum):
     """Priority levels"""
 
     LOW = "low"
-    NORMAL = "normal"
     MEDIUM = "medium"
     HIGH = "high"
     CRITICAL = "critical"
