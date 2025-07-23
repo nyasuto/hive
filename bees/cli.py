@@ -65,6 +65,7 @@ class SendKeysCLI:
         metadata: dict[str, Any] | None = None,
         dry_run: bool = False,
         chunk_size: int = 4000,  # 大容量テキスト分割サイズ
+        include_sender_header: bool = True,  # sender情報をメッセージ先頭に含める
     ) -> bool:
         """
         tmux send-keysコマンドを実行し、SQLiteにログを保存
@@ -78,6 +79,7 @@ class SendKeysCLI:
             metadata: 追加メタデータ
             dry_run: ドライランモード
             chunk_size: 大容量テキスト分割サイズ（文字数）
+            include_sender_header: sender情報をメッセージ先頭に含める
 
         Returns:
             bool: 成功時True
@@ -94,6 +96,11 @@ class SendKeysCLI:
                 "All parameters are required",
             )
 
+        # Sender情報をメッセージに含める処理
+        formatted_message = self._format_message_with_sender(
+            message, sender, message_type, include_sender_header
+        )
+
         try:
             if not dry_run:
                 # tmux send-keysコマンドを実行
@@ -104,18 +111,22 @@ class SendKeysCLI:
                     target = f"{session_name}:{target_pane}"  # 従来の形式
 
                 # メッセージサイズチェックと分割送信
-                if len(message) > chunk_size:
+                if len(formatted_message) > chunk_size:
                     self.logger.info(
-                        f"Large message detected ({len(message)} chars), splitting into chunks of {chunk_size}"
+                        f"Large message detected ({len(formatted_message)} chars), splitting into chunks of {chunk_size}"
                     )
-                    success = self._send_large_message(session_name, target, message, chunk_size)
+                    success = self._send_large_message(
+                        session_name, target, formatted_message, chunk_size
+                    )
                     if not success:
-                        error_message = f"Failed to send large message ({len(message)} chars)"
+                        error_message = (
+                            f"Failed to send large message ({len(formatted_message)} chars)"
+                        )
                 else:
                     # 通常サイズの一括送信
-                    success = self._send_single_message(session_name, target, message)
+                    success = self._send_single_message(session_name, target, formatted_message)
                     if not success:
-                        error_message = f"Failed to send message ({len(message)} chars)"
+                        error_message = f"Failed to send message ({len(formatted_message)} chars)"
 
                 # 必ず最後に1秒待ってEnterを送信
                 # tmuxで大量テキスト送信後の確定処理として必要
@@ -123,12 +134,12 @@ class SendKeysCLI:
                 cmd = ["tmux", "send-keys", "-t", target, "Enter"]
                 subprocess.run(cmd, capture_output=True, text=True, timeout=10)
 
-                self.logger.info(f"Send-keys executed: {target} <- {message[:50]}...")
+                self.logger.info(f"Send-keys executed: {target} <- {formatted_message[:50]}...")
             else:
                 # ドライランでも同様の待機時間をシミュレート
                 time.sleep(1)
                 self.logger.info(
-                    f"[DRY-RUN] Send-keys: {session_name}:{target_pane} <- {message[:50]}... + Enter (1s delay)"
+                    f"[DRY-RUN] Send-keys: {session_name}:{target_pane} <- {formatted_message[:50]}... + Enter (1s delay)"
                 )
 
         except subprocess.TimeoutExpired:
@@ -164,6 +175,73 @@ class SendKeysCLI:
             )
 
         return success
+
+    def _format_message_with_sender(
+        self,
+        message: str,
+        sender: str | None,
+        message_type: str | None,
+        include_sender_header: bool,
+    ) -> str:
+        """
+        メッセージにsender情報を含める
+
+        Args:
+            message: 元のメッセージ
+            sender: 送信者名
+            message_type: メッセージタイプ
+            include_sender_header: sender情報を含めるかどうか
+
+        Returns:
+            str: sender情報を含むフォーマット済みメッセージ
+        """
+        if not include_sender_header or not sender:
+            return message
+
+        # Bee名に対応する絵文字マッピング
+        sender_emojis = {
+            "queen": "🐝",
+            "developer": "💻",
+            "qa": "🔍",
+            "analyst": "📊",
+            "system": "⚙️",
+            "beekeeper": "🧑‍🌾",
+        }
+
+        # message_typeに対応する絵文字マッピング
+        type_emojis = {
+            "task_assignment": "🎯",
+            "analysis_request": "📊",
+            "test_request": "🧪",
+            "progress_report": "📈",
+            "quality_report": "🔍",
+            "role_injection": "🔔",
+            "status_check": "❓",
+            "notification": "📢",
+            "question": "❓",
+            "task_completed": "✅",
+        }
+
+        # Sender情報のヘッダーを作成
+        sender_emoji = sender_emojis.get(sender.lower(), "👤")
+        type_emoji = type_emojis.get(message_type, "💬") if message_type else "💬"
+
+        # 送信者表示名を整形
+        sender_display = sender.replace("_", " ").title()
+
+        # ヘッダー行を作成
+        header = f"📨 **From: {sender_emoji} {sender_display}** {type_emoji}"
+        if message_type:
+            type_display = message_type.replace("_", " ").title()
+            header += f" [{type_display}]"
+
+        # 区切り線
+        separator = "─" * 50
+
+        # メッセージ全体を組み立て
+        formatted_message = f"{header}\n{separator}\n\n{message}"
+
+        return formatted_message
 
     def _save_to_database(
         self,
@@ -349,6 +427,9 @@ Examples:
     send_parser.add_argument(
         "--dry-run", action="store_true", help="Dry run mode (no actual send-keys)"
     )
+    send_parser.add_argument(
+        "--no-sender-header", action="store_true", help="Disable sender info header in message"
+    )
 
     # ログ表示サブコマンド
     logs_parser = subparsers.add_parser("logs", help="Show send-keys logs")
@@ -385,6 +466,7 @@ Examples:
                 sender=args.sender,
                 metadata=metadata,
                 dry_run=args.dry_run,
+                include_sender_header=not args.no_sender_header,
             )
 
             if success:
