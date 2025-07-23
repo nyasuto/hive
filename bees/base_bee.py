@@ -221,15 +221,15 @@ class BaseBee:
         priority: str = "normal",
     ) -> int:
         """他のBeeにメッセージを送信（tmux sender CLI中心）"""
-        # SQLiteにはログとして記録のみ
+        # SQLiteにはログとして記録（sender CLI使用フラグ付き）
         with self._get_db_connection() as conn:
             cursor = conn.execute(
                 """
                 INSERT INTO bee_messages
-                (from_bee, to_bee, message_type, subject, content, task_id, priority)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                (from_bee, to_bee, message_type, subject, content, task_id, priority, sender_cli_used)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
-                (self.bee_name, to_bee, message_type, subject, content, task_id, priority),
+                (self.bee_name, to_bee, message_type, subject, content, task_id, priority, True),
             )
             message_id = cursor.lastrowid
             conn.commit()

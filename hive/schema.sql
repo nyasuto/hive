@@ -71,12 +71,12 @@ CREATE TABLE IF NOT EXISTS task_activity (
 -- BEE COMMUNICATION TABLES
 -- ====================
 
--- Inter-bee messaging system
+-- Inter-bee messaging system and beekeeper communications
 CREATE TABLE IF NOT EXISTS bee_messages (
     message_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    from_bee TEXT NOT NULL, -- 'queen', 'developer', 'qa', 'analyst', 'system'
-    to_bee TEXT NOT NULL, -- 'queen', 'developer', 'qa', 'analyst', 'all'
-    message_type TEXT NOT NULL DEFAULT 'info' CHECK (message_type IN ('info', 'question', 'request', 'response', 'alert', 'task_update')),
+    from_bee TEXT NOT NULL, -- 'queen', 'developer', 'qa', 'analyst', 'system', 'beekeeper'
+    to_bee TEXT NOT NULL, -- 'queen', 'developer', 'qa', 'analyst', 'all', 'beekeeper'
+    message_type TEXT NOT NULL DEFAULT 'info' CHECK (message_type IN ('info', 'question', 'request', 'response', 'alert', 'task_update', 'instruction', 'conversation')),
     subject TEXT,
     content TEXT NOT NULL,
     task_id TEXT REFERENCES tasks(task_id), -- optional task reference
@@ -86,6 +86,8 @@ CREATE TABLE IF NOT EXISTS bee_messages (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     expires_at DATETIME,
     reply_to INTEGER REFERENCES bee_messages(message_id),
+    sender_cli_used BOOLEAN NOT NULL DEFAULT TRUE, -- track if sender CLI was used
+    conversation_id TEXT, -- group related messages
     metadata TEXT -- JSON for additional message data
 );
 
