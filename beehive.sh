@@ -6,6 +6,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+PROJECT_ROOT="$SCRIPT_DIR"
 SESSION_NAME="beehive"
 
 # 色付きログ関数
@@ -42,6 +43,7 @@ COMMANDS:
     logs [bee]           ログを表示（bee: queen|developer|qa）
     attach               tmuxセッションに接続
     remind [--bee bee]   コンテキストリマインダーを手動送信
+    daemon <command>     リマインダーデーモン管理（daemon help で詳細）
     stop                 Beehiveを停止
     help                 このヘルプを表示
 
@@ -153,7 +155,7 @@ cmd_start_task() {
     
     log_info "タスクをQueen Beeに投入中: \"$task\""
     
-    # send-keys経由でQueen Beeに直接タスクを送信（シンプル版）
+    # sender CLI経由でQueen Beeに直接タスクを送信（シンプル版）
     source "./scripts/send_keys_helper.sh"
     
     local task_message="## 🎯 新しいタスクが割り当てられました
@@ -299,36 +301,38 @@ cmd_remind() {
     
     check_session_exists || return 1
     
-    # TODO: 実際のリマインダー機能は Issue #5 で実装
-    log_warning "リマインダー機能は未実装です（Issue #5で実装予定）"
-    log_info "暫定的に手動リマインダーを送信します"
+    log_info "コンテキストリマインダーを送信します"
     
     if [ -n "$target_bee" ]; then
-        source "./scripts/send_keys_helper.sh"
-        
-        case "$target_bee" in
-            "queen"|"0")
-                inject_role "$SESSION_NAME" "0" "🔔 [ROLE REMINDER] あなたはQueen Beeです。タスクの計画・分解・指示を担当してください。" "${BEEHIVE_DRY_RUN:-false}"
-                ;;
-            "developer"|"dev"|"1")
-                inject_role "$SESSION_NAME" "1" "🔔 [ROLE REMINDER] あなたはDeveloper Beeです。コードの実装を担当してください。" "${BEEHIVE_DRY_RUN:-false}"
-                ;;
-            "qa"|"2")
-                inject_role "$SESSION_NAME" "2" "🔔 [ROLE REMINDER] あなたはQA Beeです。テストと品質保証を担当してください。" "${BEEHIVE_DRY_RUN:-false}"
-                ;;
-            "analyst"|"3")
-                inject_role "$SESSION_NAME" "3" "🔔 [ROLE REMINDER] あなたはAnalyst Beeです。パフォーマンス分析・品質評価・レポート作成を担当してください。" "${BEEHIVE_DRY_RUN:-false}"
-                ;;
-        esac
-        log_success "$target_bee にリマインダーを送信しました"
+        # 特定のBeeにリマインダー送信
+        if python -m memory.context_manager --remind-bee "$target_bee"; then
+            log_success "$target_bee にリマインダーを送信しました"
+        else
+            log_error "$target_bee へのリマインダー送信に失敗しました"
+            return 1
+        fi
     else
-        # 全Beeにリマインダー
-        cmd_remind --bee queen
-        cmd_remind --bee developer
-        cmd_remind --bee qa
-        cmd_remind --bee analyst
-        log_success "全Beeにリマインダーを送信しました"
+        # 全Beeにリマインダー送信
+        if python -m memory.context_manager --remind-all; then
+            log_success "全Beeにリマインダーを送信しました"
+        else
+            log_error "リマインダー送信に失敗しました"
+            return 1
+        fi
     fi
+}
+
+# daemon コマンド - リマインダーデーモン管理
+cmd_daemon() {
+    local daemon_script="$PROJECT_ROOT/scripts/reminder_daemon.sh"
+    
+    if [[ ! -f "$daemon_script" ]]; then
+        log_error "リマインダーデーモンスクリプトが見つかりません: $daemon_script"
+        return 1
+    fi
+    
+    # reminder_daemon.shに全ての引数を渡す
+    "$daemon_script" "$@"
 }
 
 # task コマンド - タスク管理システム操作
@@ -398,6 +402,10 @@ main() {
         "remind")
             shift
             cmd_remind "$@"
+            ;;
+        "daemon")
+            shift
+            cmd_daemon "$@"
             ;;
         "stop")
             cmd_stop

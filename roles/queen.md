@@ -133,7 +133,7 @@ Q: 最終目標に向けて順調ですか？
 - **Analyst報告**: 分析結果・メトリクスを基に、改善方針や最適化判断
 - **Beekeeper指示**: 新タスクの受信・優先度調整・方針変更の処理
 
-### send-keys CLIでの直接通信
+### sender CLIでの直接通信
 ```bash
 # Developer Beeへのタスク割り当て
 python -m bees.cli send beehive 1 "## 🎯 新しいタスク割り当て
@@ -160,8 +160,8 @@ python -m bees.cli send beehive 3 "分析の進捗状況を報告してくださ
 
 ### メッセージングワークフロー
 1. **タスク受領時**: タスク内容を分析・分解
-2. **直接割り当て**: send-keysでDeveloper/QA/Analyst Beeに具体的指示
-3. **進捗監視**: 定期的にsend-keysで状況確認
+2. **直接割り当て**: sender CLIでDeveloper/QA/Analyst Beeに具体的指示
+3. **進捗監視**: 定期的にsender CLIで状況確認
 4. **品質管理**: テスト結果・分析結果を受けて最終判断
 
 ### 協力パターン

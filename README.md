@@ -47,13 +47,13 @@ python bees/init_test_db.py
               ↓               ↓
           📊 Task Planning  💻 Implementation
               ↓               ↓  
-          🗄️ SQLite ← tmux send-keys → 📝 Progress Reports
+          🗄️ SQLite ← tmux sender CLI → 📝 Progress Reports
 ```
 
 ### 通信方式
-- **リアルタイム**: tmux send-keys（Claude間直接通信）
+- **リアルタイム**: tmux sender CLI（Claude間直接通信）
 - **永続化**: SQLite（タスク状態・進捗・ログ管理）
-- **CLI**: Python CLI（send-keys透過保存）
+- **CLI**: Python CLI（sender CLI透過保存）
 
 ## 🛠️ 主要機能
 
@@ -75,7 +75,7 @@ queen.assign_task_to_bee(task_id, "developer")
 
 ### 3. 透過的ログ管理
 ```bash
-# send-keys CLI（全通信を自動記録）
+# sender CLI（全通信を自動記録）
 python -m bees.cli send beehive 0.0 "Hello Queen!" --type notification
 python -m bees.cli logs --session beehive --limit 10
 ```
@@ -87,7 +87,7 @@ hive/
 ├── beehive.sh              # メインオーケストレーター
 ├── Makefile                # 開発用コマンド
 ├── bees/                   # Python自律システム
-│   ├── cli.py             # send-keys CLI（透過保存）
+│   ├── cli.py             # sender CLI（透過保存）
 │   ├── base_bee.py        # 基底Beeクラス
 │   ├── queen_bee.py       # Queen Bee（タスク管理）
 │   └── worker_bee.py      # Worker Bee（実行）
@@ -122,7 +122,7 @@ make test                           # テスト実行
 make dev-setup                      # 開発環境セットアップ
 ```
 
-### send-keys CLI
+### sender CLI
 ```bash
 # 基本送信
 python -m bees.cli send beehive 0.0 "メッセージ" --type notification
@@ -157,7 +157,7 @@ show_send_keys_logs "beehive" 10
 # Python Beeクラステスト
 python bees/test_tmux_communication.py
 
-# send-keys CLIテスト
+# sender CLIテスト
 python -m bees.cli send test_session 0.0 "test" --dry-run
 
 # 統合テスト
@@ -184,7 +184,7 @@ tmux capture-pane -t beehive:0 -p
 - [x] Queen→Worker タスク割り当て・管理
 - [x] Worker→Queen 進捗報告・完了通知
 - [x] SQLite永続化（タスク・状態・通信ログ）
-- [x] send-keys CLI化・透過保存
+- [x] sender CLI化・透過保存
 - [x] Shell用ヘルパー関数
 - [x] CI/CD パイプライン
 - [x] 品質チェック・テスト自動化

@@ -45,7 +45,7 @@ make dev-setup
 ./beehive.sh stop
 ```
 
-## 🔧 send-keys CLI 体験
+## 🔧 sender CLI 体験
 
 ```bash
 # 1. ドライランで送信テスト
@@ -112,7 +112,7 @@ tmux capture-pane -t beehive:1 -p    # Developer Beeの画面
 ```bash
 # 環境変数でドライランモード
 export BEEHIVE_DRY_RUN=true
-./beehive.sh start-task "実験用タスク"  # 実際のsend-keysなしで動作確認
+./beehive.sh start-task "実験用タスク"  # 実際のsender CLIなしで動作確認
 
 # シェルヘルパーでの実験
 source scripts/send_keys_helper.sh

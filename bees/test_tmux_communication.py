@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Test script for tmux-based communication functionality
-Issue #4: 基本的な自律実行システムのテスト (tmux send-keys中心)
+Issue #4: 基本的な自律実行システムのテスト (tmux sender CLI中心)
 """
 
 import subprocess
@@ -28,7 +28,7 @@ def check_tmux_session():
 
 
 def test_tmux_communication():
-    """tmux send-keys中心の通信テスト"""
+    """tmux sender CLI中心の通信テスト"""
     print("🧪 Testing tmux-based Communication")
     print("=" * 50)
 
@@ -55,7 +55,7 @@ def test_tmux_communication():
 
     print(f"✅ Task created with ID: {task_id}")
 
-    # タスクをDeveloperに割り当て（tmux send-keysで通信される）
+    # タスクをDeveloperに割り当て（tmux sender CLIで通信される）
     print("\n🎯 Queen assigning task to Developer...")
     success = queen.assign_task_to_bee(
         task_id, "developer", "Implementing authentication system as core security feature"
@@ -77,7 +77,7 @@ def test_tmux_communication():
     # Developerがタスクを受け入れ
     developer.accept_task(task_id)
 
-    # 進捗報告（tmux send-keysで Queen に送信される）
+    # 進捗報告（tmux sender CLIで Queen に送信される）
     developer.report_progress(task_id, 30, "JWT library integrated, working on login endpoint")
     developer.report_progress(task_id, 60, "Login/logout endpoints complete, adding validation")
     developer.report_progress(task_id, 85, "Authentication working, adding tests")
@@ -160,7 +160,7 @@ def test_tmux_communication():
     print("\n📝 Note:")
     print("   This test demonstrates the communication architecture.")
     print("   In the real system:")
-    print("   • Messages are sent via 'tmux send-keys' to Claude instances")
+    print("   • Messages are sent via 'tmux sender CLI' to Claude instances")
     print("   • Claude agents receive messages in their tmux panes")
     print("   • SQLite stores communication logs and task state")
     print("   • Human operators can monitor via './beehive.sh status' and logs")

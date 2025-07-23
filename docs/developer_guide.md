@@ -104,14 +104,14 @@ export BEEHIVE_DB_PATH="custom/path/hive.db"
 
 ### 1. 通信プロトコル
 
-**SQLite + tmux send-keys** による双方向通信：
+**SQLite + tmux sender CLI** による双方向通信：
 
 ```mermaid
 graph TD
-    A[Claude A] -->|tmux send-keys| B[Claude B]
+    A[Claude A] -->|tmux sender CLI| B[Claude B]
     A -->|INSERT| C[SQLite]
     B -->|SELECT| C
-    B -->|tmux send-keys| A
+    B -->|tmux sender CLI| A
     B -->|INSERT| C
 ```
 
@@ -563,7 +563,7 @@ with open('logs/beehive.log') as f:
 #### データベースログ
 
 ```bash
-# send-keys通信ログ
+# sender CLI通信ログ
 sqlite3 hive/hive_memory.db "
 SELECT timestamp, session_name, pane_id, message_preview 
 FROM send_keys_log 
@@ -637,7 +637,7 @@ rm -f hive/hive_memory.db
 python bees/init_test_db.py
 ./beehive.sh init
 
-# 手動send-keysテスト
+# 手動sender CLIテスト
 python -m bees.cli send beehive 0.0 "test message" --dry-run
 ```
 
