@@ -1,0 +1,13 @@
+# Codecov Configuration
+comment: false  # Disable PR comments
+
+coverage:
+      
+  # プロジェクト別設定
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 1%
+          
+    patch: off  # Disable patch coverage checks
